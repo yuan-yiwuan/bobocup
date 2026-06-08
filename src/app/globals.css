@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f0fdfa;
+  --foreground: #0f3d3e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+
+  /* 蓝绿色主题 */
+  --color-teal-brand: #14b8a6;
+  --color-teal-deep: #0d9488;
+  --color-ocean: #0ea5e9;
+  --color-cream: #fffbeb;
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% 10%, #ccfbf1 0%, transparent 40%),
+    radial-gradient(circle at 85% 20%, #bae6fd 0%, transparent 45%),
+    linear-gradient(160deg, #f0fdfa 0%, #ecfeff 50%, #f0f9ff 100%);
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* 卡通风：圆角 + 粗描边 + 厚阴影 */
+.cartoon-card {
+  border: 3px solid #0f3d3e;
+  border-radius: 1.25rem;
+  box-shadow: 4px 5px 0 0 rgba(15, 61, 62, 0.85);
+  background: #ffffff;
+}
+
+.cartoon-btn {
+  border: 2.5px solid #0f3d3e;
+  border-radius: 0.9rem;
+  box-shadow: 2px 3px 0 0 rgba(15, 61, 62, 0.85);
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease;
+  font-weight: 700;
+}
+.cartoon-btn:active:not(:disabled) {
+  transform: translate(2px, 3px);
+  box-shadow: 0 0 0 0 rgba(15, 61, 62, 0.85);
+}
+.cartoon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
