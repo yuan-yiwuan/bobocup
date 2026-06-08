@@ -46,9 +46,17 @@ export default function Nav({ nickname }: { nickname: string | null }) {
         </nav>
         <div className="ml-auto flex items-center gap-2">
           {nickname && (
-            <span className="text-white/90 text-sm font-semibold hidden sm:inline max-w-[8rem] truncate">
-              {nickname}
-            </span>
+            <Link
+              href="/settings"
+              className={`text-sm font-semibold max-w-[8rem] truncate px-2 py-1 rounded-full ${
+                pathname.startsWith("/settings")
+                  ? "bg-yellow-300 text-[#0f3d3e]"
+                  : "text-white/90 hover:bg-white/15"
+              }`}
+              title="编辑资料"
+            >
+              ⚙️ {nickname}
+            </Link>
           )}
           <button
             onClick={signOut}
