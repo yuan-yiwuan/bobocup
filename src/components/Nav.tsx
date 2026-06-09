@@ -27,7 +27,7 @@ export default function Nav({ nickname }: { nickname: string | null }) {
     <header className="sticky top-0 z-20 bg-teal-deep/95 backdrop-blur border-b-4 border-[#0f3d3e]">
       <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
         <Link href="/matches" className="text-2xl shrink-0" title="波波杯">
-          🥕
+          🥅
         </Link>
         <nav className="flex gap-1.5">
           {LINKS.map((l) => {
