@@ -44,7 +44,13 @@ export default function LeaderboardView({
 
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  if (rows.length === 0) {
+  // 只显示已经投过注的人（有 pending 也算参与）
+  const visibleRows = useMemo(
+    () => rows.filter((r) => (betsByUser.get(r.id)?.length ?? 0) > 0),
+    [rows, betsByUser],
+  );
+
+  if (visibleRows.length === 0) {
     return (
       <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
         还没有人入榜，快去竞猜吧 ⚽
@@ -54,7 +60,7 @@ export default function LeaderboardView({
 
   return (
     <div className="flex flex-col gap-3">
-      {rows.map((row, i) => {
+      {visibleRows.map((row, i) => {
         const team = row.home_team_id ? teamMap[row.home_team_id] : undefined;
         const isOpen = expanded === row.id;
         const isMe = row.id === currentUserId;
