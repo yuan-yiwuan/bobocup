@@ -24,15 +24,21 @@ export default function Nav({ nickname }: { nickname: string | null }) {
 
   return (
     <header className="sticky top-0 z-20 bg-teal-deep/95 backdrop-blur border-b-4 border-[#0f3d3e]">
-      <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
-        <nav className="flex gap-1.5">
+      <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-2 sm:gap-3">
+        <Link
+          href="/matches"
+          className="font-black text-white text-lg shrink-0 whitespace-nowrap"
+        >
+          🥕<span className="hidden sm:inline"> 波波杯</span>
+        </Link>
+        <nav className="flex gap-1.5 shrink-0">
           {LINKS.map((l) => {
             const active = pathname.startsWith(l.href);
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`px-2.5 py-1.5 rounded-full text-sm font-bold border-2 border-[#0f3d3e] ${
+                className={`px-2.5 py-1.5 rounded-full text-sm font-bold border-2 border-[#0f3d3e] whitespace-nowrap shrink-0 ${
                   active
                     ? "bg-yellow-300 text-[#0f3d3e]"
                     : "bg-white/90 text-teal-deep"
@@ -45,13 +51,13 @@ export default function Nav({ nickname }: { nickname: string | null }) {
         </nav>
 
         {/* 右侧：昵称 + 下拉（设置/规则/退出） */}
-        <div className="ml-auto relative">
+        <div className="ml-auto relative shrink-0">
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cartoon-btn bg-white text-teal-deep px-3 py-1.5 text-sm flex items-center gap-1 max-w-[10rem]"
+            className="cartoon-btn bg-white text-teal-deep px-3 py-1.5 text-sm flex items-center gap-1 max-w-[4.5rem] sm:max-w-[10rem]"
           >
             <span className="truncate">{nickname ?? "我"}</span>
-            <span className="text-xs">▾</span>
+            <span className="text-xs shrink-0">▾</span>
           </button>
 
           {menuOpen && (
