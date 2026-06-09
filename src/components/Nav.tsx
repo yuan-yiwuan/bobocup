@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/matches", label: "竞猜", icon: "⚽" },
-  { href: "/my-bets", label: "我的投注", icon: "📋" },
   { href: "/leaderboard", label: "毒奶榜", icon: "🥛" },
 ];
 
@@ -26,8 +25,11 @@ export default function Nav({ nickname }: { nickname: string | null }) {
   return (
     <header className="sticky top-0 z-20 bg-teal-deep/95 backdrop-blur border-b-4 border-[#0f3d3e]">
       <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
-        <Link href="/matches" className="text-2xl shrink-0" title="波波杯">
-          🥅
+        <Link
+          href="/matches"
+          className="font-black text-white text-lg shrink-0"
+        >
+          🥕 波波杯
         </Link>
         <nav className="flex gap-1.5">
           {LINKS.map((l) => {
@@ -42,8 +44,7 @@ export default function Nav({ nickname }: { nickname: string | null }) {
                     : "bg-white/90 text-teal-deep"
                 }`}
               >
-                {l.icon}
-                <span className="hidden sm:inline"> {l.label}</span>
+                {l.icon} {l.label}
               </Link>
             );
           })}
@@ -67,6 +68,13 @@ export default function Nav({ nickname }: { nickname: string | null }) {
                 onClick={() => setMenuOpen(false)}
               />
               <div className="absolute right-0 mt-2 w-36 z-20 cartoon-card p-1.5 flex flex-col">
+                <Link
+                  href="/my-bets"
+                  onClick={() => setMenuOpen(false)}
+                  className="px-3 py-2 rounded-lg text-sm font-bold text-teal-deep hover:bg-teal-50 text-left"
+                >
+                  📋 我的投注
+                </Link>
                 <Link
                   href="/settings"
                   onClick={() => setMenuOpen(false)}
