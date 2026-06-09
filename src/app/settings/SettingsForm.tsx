@@ -21,6 +21,9 @@ export default function SettingsForm({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // 主队一旦选定（非空）即锁定，不可更换
+  const homeTeamLocked = initialHomeTeam != null;
+
   const dirty =
     nickname.trim() !== initialNickname || homeTeam !== initialHomeTeam;
 
@@ -77,6 +80,7 @@ export default function SettingsForm({
         <span className="font-bold text-teal-deep text-sm">主队</span>
         <select
           value={homeTeam ?? ""}
+          disabled={homeTeamLocked}
           onChange={(e) => {
             setHomeTeam(e.target.value ? Number(e.target.value) : null);
             setSaved(false);
@@ -90,6 +94,11 @@ export default function SettingsForm({
             </option>
           ))}
         </select>
+        <span className="text-xs text-teal-deep/50">
+          {homeTeamLocked
+            ? "小组赛期间，主队不可更换"
+            : "⚠️ 小组赛期间，一旦选定不能更换，请慎重"}
+        </span>
       </label>
 
       {error && <p className="text-red-600 font-semibold text-sm">{error}</p>}

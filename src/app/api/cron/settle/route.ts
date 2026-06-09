@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     // 结算该场所有未结算注单
     const { data: bets, error: bErr } = await supabase
       .from("bets")
-      .select("id, pick")
+      .select("id, pick, stake, odds_snapshot")
       .eq("match_id", match.id)
       .eq("status", "pending");
     if (bErr) {
@@ -90,8 +90,11 @@ export async function GET(request: NextRequest) {
 
     for (const bet of bets ?? []) {
       const won = bet.pick === score.result;
-      const odds = oddsForPick(match, bet.pick as Pick) ?? 1;
-      const payout = won ? Math.round(STAKE * odds) : 0;
+      // 赔率以下单时锁定的为准；缺失则回退到比赛当前赔率
+      const odds =
+        bet.odds_snapshot ?? oddsForPick(match, bet.pick as Pick) ?? 1;
+      const stake = bet.stake ?? STAKE;
+      const payout = won ? Math.round(stake * odds) : 0;
       const { error: setErr } = await supabase
         .from("bets")
         .update({

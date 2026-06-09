@@ -1,44 +1,39 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import type { Bet, Match, Pick, Team } from "@/lib/types";
-import { STAKE } from "@/lib/types";
-import {
-  formatOdds,
-  matchDateKey,
-  matchTime,
-  pickLabel,
-  sideLabel,
-  type TeamMap,
-} from "@/lib/format";
-
-const PICKS: Pick[] = ["home", "draw", "away"];
+import Link from "next/link";
+import MatchCard from "@/components/MatchCard";
+import type { Bet, Match, Team } from "@/lib/types";
+import { matchDateKey, type TeamMap } from "@/lib/format";
+import { useMounted } from "@/lib/useMounted";
 
 export default function MatchesView({
   matches,
   teams,
   initialBets,
+  userId,
+  userHomeTeamId,
 }: {
   matches: Match[];
   teams: Team[];
   initialBets: Bet[];
+  userId: string;
+  userHomeTeamId: number | null;
 }) {
-  const router = useRouter();
+  const mounted = useMounted();
+
   const teamMap: TeamMap = useMemo(
     () => Object.fromEntries(teams.map((t) => [t.id, t])),
     [teams],
   );
 
-  // match_id -> pick（当前用户的投注）
-  const [bets, setBets] = useState<Record<string, Pick>>(() =>
-    Object.fromEntries(initialBets.map((b) => [b.match_id, b.pick])),
+  // match_id -> 当前用户的注单
+  const betMap = useMemo(
+    () => Object.fromEntries(initialBets.map((b) => [b.match_id, b])),
+    [initialBets],
   );
-  const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  // 按日期分组
+  // 按日期分组（按浏览器本地时区，挂载后才计算以避免 hydration 不一致）
   const groups = useMemo(() => {
     const map = new Map<string, Match[]>();
     for (const m of matches) {
@@ -49,10 +44,9 @@ export default function MatchesView({
     return Array.from(map.entries());
   }, [matches]);
 
-  const [activeDate, setActiveDate] = useState(groups[0]?.[0] ?? "");
+  const [activeDate, setActiveDate] = useState<string | null>(null);
   const [teamFilter, setTeamFilter] = useState<number | "all">("all");
 
-  // 出现在赛程里的球队（用于 filter）
   const teamsInPlay = useMemo(() => {
     const ids = new Set<number>();
     for (const m of matches) {
@@ -64,47 +58,18 @@ export default function MatchesView({
       .sort((a, b) => a.name_zh.localeCompare(b.name_zh, "zh"));
   }, [matches, teams]);
 
+  const filtering = teamFilter !== "all";
+  const currentDate = activeDate ?? groups[0]?.[0] ?? "";
+
+  // 筛选球队时：显示该队所有比赛（跨日期）；否则按当前日期 tab
   const visible = useMemo(() => {
-    const inDate =
-      groups.find(([d]) => d === activeDate)?.[1] ?? [];
-    if (teamFilter === "all") return inDate;
-    return inDate.filter(
-      (m) => m.home_team_id === teamFilter || m.away_team_id === teamFilter,
-    );
-  }, [groups, activeDate, teamFilter]);
-
-  async function placeBet(match: Match, pick: Pick) {
-    setError(null);
-    setPending(match.id);
-    const prev = bets[match.id];
-    setBets((b) => ({ ...b, [match.id]: pick })); // 乐观更新
-
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/login");
-      return;
+    if (filtering) {
+      return matches.filter(
+        (m) => m.home_team_id === teamFilter || m.away_team_id === teamFilter,
+      );
     }
-
-    const { error: err } = await supabase.from("bets").upsert(
-      { user_id: user.id, match_id: match.id, pick, stake: STAKE },
-      { onConflict: "user_id,match_id" },
-    );
-
-    if (err) {
-      // 回滚
-      setBets((b) => {
-        const next = { ...b };
-        if (prev) next[match.id] = prev;
-        else delete next[match.id];
-        return next;
-      });
-      setError(err.message.includes("已开赛") ? "比赛已开赛，无法下注" : err.message);
-    }
-    setPending(null);
-  }
+    return groups.find(([d]) => d === currentDate)?.[1] ?? [];
+  }, [matches, groups, currentDate, teamFilter, filtering]);
 
   if (matches.length === 0) {
     return (
@@ -117,16 +82,29 @@ export default function MatchesView({
     );
   }
 
+  if (!mounted) {
+    return (
+      <div className="cartoon-card p-8 text-center text-teal-deep/60 font-bold">
+        加载中…
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* 日期 tab */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* 日期 tab（始终保留，筛选球队时变灰禁用，避免布局跳动） */}
+      <div
+        className={`flex gap-2 overflow-x-auto pb-1 ${
+          filtering ? "opacity-40 pointer-events-none" : ""
+        }`}
+      >
         {groups.map(([date, ms]) => (
           <button
             key={date}
+            disabled={filtering}
             onClick={() => setActiveDate(date)}
             className={`cartoon-btn shrink-0 px-3 py-2 text-sm ${
-              date === activeDate
+              date === currentDate && !filtering
                 ? "bg-teal-brand text-white"
                 : "bg-white text-teal-deep"
             }`}
@@ -137,8 +115,8 @@ export default function MatchesView({
         ))}
       </div>
 
-      {/* 球队 filter */}
-      <div className="flex items-center gap-2">
+      {/* 球队 filter + 只看主队 */}
+      <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-bold text-teal-deep">筛选球队</span>
         <select
           value={teamFilter}
@@ -156,78 +134,51 @@ export default function MatchesView({
             </option>
           ))}
         </select>
+        {filtering ? (
+          <button
+            onClick={() => setTeamFilter("all")}
+            className="cartoon-btn px-3 py-1.5 text-sm bg-teal-brand text-white"
+          >
+            看所有队
+          </button>
+        ) : userHomeTeamId != null ? (
+          <button
+            onClick={() => setTeamFilter(userHomeTeamId)}
+            className="cartoon-btn px-3 py-1.5 text-sm bg-white text-teal-deep"
+          >
+            ⭐ 只看主队
+          </button>
+        ) : (
+          <Link
+            href="/settings"
+            className="cartoon-btn px-3 py-1.5 text-sm bg-white text-teal-deep"
+            title="去设置选择主队"
+          >
+            ⭐ 设置主队
+          </Link>
+        )}
       </div>
-
-      {error && (
-        <p className="text-red-600 font-semibold text-sm bg-red-50 cartoon-btn px-3 py-2">
-          {error}
-        </p>
-      )}
 
       {/* 比赛卡片 */}
       <div className="flex flex-col gap-3">
         {visible.length === 0 && (
           <div className="cartoon-card p-6 text-center text-teal-deep/70 font-semibold">
-            这一天没有该球队的比赛
+            {filtering ? "该球队没有可竞猜的比赛" : "这一天没有比赛"}
           </div>
         )}
         {visible.map((m) => {
-          const myPick = bets[m.id];
-          const isPending = pending === m.id;
+          const bet = betMap[m.id];
           return (
-            <div key={m.id} className="cartoon-card p-4">
-              <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-2">
-                <span>🕐 {matchTime(m.commence_time)}</span>
-                {myPick && (
-                  <span className="text-teal-deep">
-                    已押 🥕{STAKE} · {pickLabel(m, myPick, teamMap)}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-center gap-2 font-black text-teal-deep text-lg mb-3">
-                <span className="flex-1 text-right">
-                  {sideLabel(m, "home", teamMap)}
-                </span>
-                <span className="text-teal-deep/40 text-sm">VS</span>
-                <span className="flex-1 text-left">
-                  {sideLabel(m, "away", teamMap)}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {PICKS.map((p) => {
-                  const odds =
-                    p === "home"
-                      ? m.odds_home
-                      : p === "draw"
-                        ? m.odds_draw
-                        : m.odds_away;
-                  const selected = myPick === p;
-                  return (
-                    <button
-                      key={p}
-                      disabled={isPending}
-                      onClick={() => placeBet(m, p)}
-                      className={`cartoon-btn px-2 py-2 flex flex-col items-center ${
-                        selected
-                          ? "bg-yellow-300 text-teal-deep"
-                          : "bg-white text-teal-deep"
-                      }`}
-                    >
-                      <span className="text-sm leading-tight">
-                        {p === "draw"
-                          ? "平局"
-                          : p === "home"
-                            ? "主胜"
-                            : "客胜"}
-                      </span>
-                      <span className="text-xs opacity-70">
-                        {formatOdds(odds)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <MatchCard
+              key={m.id}
+              match={m}
+              teams={teamMap}
+              userId={userId}
+              userHomeTeamId={userHomeTeamId}
+              initialPick={bet?.pick ?? null}
+              initialStake={bet?.stake ?? 100}
+              showDate={filtering}
+            />
           );
         })}
       </div>

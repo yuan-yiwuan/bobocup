@@ -69,6 +69,7 @@ export default function OnboardingForm({
         <span className="font-bold text-teal-deep text-sm">主队（可选）</span>
         <select
           value={homeTeam ?? ""}
+          disabled={initialHomeTeam != null}
           onChange={(e) =>
             setHomeTeam(e.target.value ? Number(e.target.value) : null)
           }
@@ -81,6 +82,9 @@ export default function OnboardingForm({
             </option>
           ))}
         </select>
+        <span className="text-xs text-teal-deep/50">
+          ⚠️ 小组赛期间，一旦选定不能更换；不选可稍后在设置里选一次
+        </span>
       </label>
 
       {error && <p className="text-red-600 font-semibold text-sm">{error}</p>}

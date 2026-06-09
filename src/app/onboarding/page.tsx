@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Team } from "@/lib/types";
+import { getPlayingTeams } from "@/lib/playingTeams";
 import OnboardingForm from "./OnboardingForm";
 
 export default async function OnboardingPage() {
@@ -16,10 +16,7 @@ export default async function OnboardingPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { data: teams } = await supabase
-    .from("teams")
-    .select("*")
-    .order("name_zh");
+  const teams = await getPlayingTeams(supabase);
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-5 py-10">
@@ -29,7 +26,7 @@ export default async function OnboardingPage() {
           设置一下昵称和你的主队，就可以开始竞猜啦。
         </p>
         <OnboardingForm
-          teams={(teams ?? []) as Team[]}
+          teams={teams}
           initialNickname={profile?.nickname ?? ""}
           initialHomeTeam={profile?.home_team_id ?? null}
         />

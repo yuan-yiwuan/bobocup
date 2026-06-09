@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
-import type { Team } from "@/lib/types";
+import { getPlayingTeams } from "@/lib/playingTeams";
 import SettingsForm from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +20,7 @@ export default async function SettingsPage() {
     .maybeSingle();
   if (!profile?.nickname) redirect("/onboarding");
 
-  const { data: teams } = await supabase
-    .from("teams")
-    .select("*")
-    .order("name_zh");
+  const teams = await getPlayingTeams(supabase);
 
   return (
     <>
@@ -35,7 +32,7 @@ export default async function SettingsPage() {
         </p>
         <div className="cartoon-card p-6">
           <SettingsForm
-            teams={(teams ?? []) as Team[]}
+            teams={teams}
             initialNickname={profile.nickname}
             initialHomeTeam={profile.home_team_id ?? null}
           />

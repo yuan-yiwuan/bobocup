@@ -65,11 +65,20 @@ export const TEAM_NAMES: Record<string, { zh: string; flag: string }> = {
   uzbekistan: { zh: "乌兹别克斯坦", flag: "🇺🇿" },
   jordan: { zh: "约旦", flag: "🇯🇴" },
   iraq: { zh: "伊拉克", flag: "🇮🇶" },
-  // 中北美
+  // 中北美 / 加勒比
   "costa rica": { zh: "哥斯达黎加", flag: "🇨🇷" },
   panama: { zh: "巴拿马", flag: "🇵🇦" },
   honduras: { zh: "洪都拉斯", flag: "🇭🇳" },
   jamaica: { zh: "牙买加", flag: "🇯🇲" },
+  haiti: { zh: "海地", flag: "🇭🇹" },
+  "curaçao": { zh: "库拉索", flag: "🇨🇼" },
+  curacao: { zh: "库拉索", flag: "🇨🇼" },
+  // 其它参赛队
+  "bosnia & herzegovina": { zh: "波黑", flag: "🇧🇦" },
+  "bosnia and herzegovina": { zh: "波黑", flag: "🇧🇦" },
+  "cape verde": { zh: "佛得角", flag: "🇨🇻" },
+  "dr congo": { zh: "刚果(金)", flag: "🇨🇩" },
+  "democratic republic of the congo": { zh: "刚果(金)", flag: "🇨🇩" },
 };
 
 /** 查中文名+国旗；查不到则回退到原英文名、用 ⚽ 占位。 */

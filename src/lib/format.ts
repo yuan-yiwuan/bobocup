@@ -31,20 +31,18 @@ export function formatMilk(index: number | null): string {
   return `${index > 0 ? "+" : ""}${index}%`;
 }
 
-/** 比赛日期 key（按北京时间分组），如 "6月11日 周三"。 */
+/** 比赛日期 key（按用户本地时区分组），如 "6月11日 周三"。 */
 export function matchDateKey(iso: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
-    timeZone: "Asia/Shanghai",
     month: "long",
     day: "numeric",
     weekday: "short",
   }).format(new Date(iso));
 }
 
-/** 比赛开球时间（北京时间 HH:mm）。 */
+/** 比赛开球时间（用户本地时区 HH:mm）。 */
 export function matchTime(iso: string): string {
   return new Intl.DateTimeFormat("zh-CN", {
-    timeZone: "Asia/Shanghai",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
