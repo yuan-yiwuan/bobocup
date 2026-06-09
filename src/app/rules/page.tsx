@@ -32,7 +32,7 @@ export default async function RulesPage() {
                 <b>主胜 / 平局 / 客胜</b>，每注默认 <b>100 根胡萝卜 🥕</b>
               </li>
               <li>开赛前可以随便改、也可以取消</li>
-              <li>只显示还没开赛的比赛；开赛后这场就锁定了</li>
+              <li>只能投注还没开赛的比赛；开赛后这场就锁定了</li>
             </ul>
           </Section>
 
