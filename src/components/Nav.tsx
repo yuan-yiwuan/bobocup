@@ -54,7 +54,7 @@ export default function Nav({ nickname }: { nickname: string | null }) {
         <div className="ml-auto relative shrink-0">
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cartoon-btn bg-white text-teal-deep px-3 py-1.5 text-sm flex items-center gap-1 max-w-[4.5rem] sm:max-w-[10rem]"
+            className="cartoon-btn bg-white text-teal-deep px-3 py-1.5 text-sm flex items-center gap-1 max-w-[10rem]"
           >
             <span className="truncate">{nickname ?? "我"}</span>
             <span className="text-xs shrink-0">▾</span>
