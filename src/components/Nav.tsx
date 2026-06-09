@@ -25,12 +25,6 @@ export default function Nav({ nickname }: { nickname: string | null }) {
   return (
     <header className="sticky top-0 z-20 bg-teal-deep/95 backdrop-blur border-b-4 border-[#0f3d3e]">
       <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-3">
-        <Link
-          href="/matches"
-          className="font-black text-white text-lg shrink-0"
-        >
-          🥕 波波杯
-        </Link>
         <nav className="flex gap-1.5">
           {LINKS.map((l) => {
             const active = pathname.startsWith(l.href);
