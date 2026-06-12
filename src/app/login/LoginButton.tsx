@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function LoginButton() {
+export default function LoginButton({ disabled = false }: { disabled?: boolean }) {
   const [loading, setLoading] = useState(false);
 
   async function signIn() {
@@ -24,8 +24,12 @@ export default function LoginButton() {
   return (
     <button
       onClick={signIn}
-      disabled={loading}
-      className="cartoon-btn bg-white text-teal-deep px-6 py-3 text-base flex items-center gap-2"
+      disabled={loading || disabled}
+      className={`cartoon-btn px-6 py-3 text-base flex items-center gap-2 ${
+        disabled
+          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+          : "bg-white text-teal-deep"
+      }`}
     >
       <span className="text-xl">🇬</span>
       {loading ? "跳转中…" : "使用 Google 登录"}
