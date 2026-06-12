@@ -25,13 +25,16 @@ export function formatOdds(odds: number | null): string {
   return odds == null ? "—" : odds.toFixed(2);
 }
 
-/**
- * 毒奶指数文案。指数 = 已结算押注总额 − 回报总额（净亏的胡萝卜数）。
- * 正数=亏（毒），负数=赚，越高越毒。无已结算注单时为 null。
- */
-export function formatMilk(index: number | null): string {
-  if (index == null) return "暂无";
-  return `${index > 0 ? "+" : ""}${index}`;
+/** 净收益文案（收到 − 押注）。正=赚、负=亏；无已结算注单时为 null。 */
+export function formatProfit(net: number | null): string {
+  if (net == null) return "暂无";
+  return `${net > 0 ? "+" : ""}${net}`;
+}
+
+/** 毒奶指数文案：猜错率（猜错场次 ÷ 已结算场次），如 "60%"。无已结算注单时为 null。 */
+export function formatLossRate(rate: number | null): string {
+  if (rate == null) return "暂无";
+  return `${Math.round(rate * 100)}%`;
 }
 
 /** 比赛日期 key（按用户本地时区分组），如 "6月11日 周三"。 */

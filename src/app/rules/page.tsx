@@ -59,21 +59,38 @@ export default async function RulesPage() {
             </ul>
           </Section>
 
-          <Section title="🥛 毒奶指数">
+          <Section title="🥛 毒奶榜">
             <p>
-              毒奶指数 = 你<b>净亏掉的胡萝卜数</b>，<b>越高越毒</b>：
+              按<b>猜错率</b>排，<b>越高越毒</b>。毒奶指数就是你已结算比赛里猜错的比例：
             </p>
             <div className="cartoon-btn bg-cream px-3 py-2 my-2 text-sm font-mono">
-              毒奶指数 = 已结算押注总额 − 回报总额
+              毒奶指数 = 猜错场次 ÷ 已结算场次
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
-              <li>押 100 全输 → <b>+100</b>（满级毒奶）</li>
-              <li>押 100 赢回 200 → <b>−100</b>（虚假毒奶，其实在赚）</li>
-              <li>排行榜按毒奶指数从高到低排，第一名就是<b>当前毒奶王</b> 👑</li>
+              <li>5 场猜错 3 场 → <b>60%</b></li>
+              <li>第一名就是<b>当前毒奶王</b> 👑</li>
+              <li>
+                顶部显示 <b>🎯 昨日最准</b> / <b>🥛 昨日最毒</b>（按昨天的命中率）
+              </li>
             </ul>
-            <p className="mt-2">
-              另外榜单顶部会显示 <b>🎯 昨日最准</b> 和 <b>🥛 昨日最毒</b>
-              （只看昨天开赛、已结算的比赛，按净胡萝卜算；并列就轮流展示）。
+          </Section>
+
+          <Section title="🥕 收益榜">
+            <p>
+              按<b>净收益</b>排，<b>越高越富</b>。就是你收到的胡萝卜减去押出去的：
+            </p>
+            <div className="cartoon-btn bg-cream px-3 py-2 my-2 text-sm font-mono">
+              净收益 = 回报总额 − 已结算押注总额
+            </div>
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li>押 100 赢回 200 → <b>+100</b>；押 100 全输 → <b>−100</b></li>
+              <li>第一名就是<b>当前首富</b> 👑</li>
+              <li>
+                顶部显示 <b>💰 昨日最赚</b> / <b>💸 昨日最赔</b>（按昨天的净胡萝卜）
+              </li>
+            </ul>
+            <p className="mt-2 text-xs text-teal-deep/60">
+              昨日榜只看昨天开赛、已结算的比赛；多人并列时轮流展示。
             </p>
           </Section>
         </div>

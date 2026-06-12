@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
 import type { Bet, Match, Team } from "@/lib/types";
 import { getLastSettleRun } from "@/lib/meta";
-import { settleRunLabel } from "@/lib/format";
+import SettleRunNote from "@/components/SettleRunNote";
 import MyBetsView from "./MyBetsView";
 
 export const dynamic = "force-dynamic";
@@ -42,11 +42,7 @@ export default async function MyBetsPage() {
         <p className="text-sm text-teal-deep/60 font-semibold mb-1">
           未开赛的可以直接改注或取消。
         </p>
-        {lastSettleRun && (
-          <p className="text-xs text-teal-deep/40 font-semibold mb-4">
-            🔄 上次结算检查：{settleRunLabel(lastSettleRun)}
-          </p>
-        )}
+        {lastSettleRun && <SettleRunNote iso={lastSettleRun} />}
         <MyBetsView
           bets={(bets ?? []) as Bet[]}
           matches={(matches ?? []) as Match[]}
