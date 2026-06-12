@@ -48,7 +48,8 @@ export default function OnboardingForm({
       setError(err.message);
       return;
     }
-    router.push("/matches");
+    // 首次注册完成后先看规则页（页面底部有「开始竞猜」按钮进入竞猜页）
+    router.push("/rules");
     router.refresh();
   }
 
@@ -94,7 +95,7 @@ export default function OnboardingForm({
         disabled={saving}
         className="cartoon-btn bg-yellow-300 text-teal-deep px-4 py-3 mt-1"
       >
-        {saving ? "保存中…" : "开始竞猜 🚀"}
+        {saving ? "保存中…" : "完成，看规则 📖"}
       </button>
     </div>
   );

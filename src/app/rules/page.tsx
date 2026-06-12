@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
@@ -94,6 +95,13 @@ export default async function RulesPage() {
             </p>
           </Section>
         </div>
+
+        <Link
+          href="/matches"
+          className="cartoon-btn bg-yellow-300 text-teal-deep px-4 py-3 mt-6 block text-center font-black text-base"
+        >
+          开始竞猜 🚀
+        </Link>
       </main>
     </>
   );
