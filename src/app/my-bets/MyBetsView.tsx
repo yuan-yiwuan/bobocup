@@ -178,7 +178,7 @@ function StaticRow({
       </div>
       {bet.status === "won" && bet.payout != null && (
         <span className="text-sm font-bold text-emerald-600 shrink-0">
-          +🥕{bet.payout}
+          +🥕{bet.payout - bet.stake}
         </span>
       )}
       {bet.status === "lost" && (

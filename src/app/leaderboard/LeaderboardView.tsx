@@ -153,7 +153,7 @@ export default function LeaderboardView({
     );
   }
 
-  const kingText = tab === "milk" ? "👑 当前毒奶王" : "👑 当前首富";
+  const kingText = tab === "milk" ? "👑 当前毒奶王" : "👑 胡萝卜最多";
 
   return (
     <div className="flex flex-col gap-3">
@@ -163,7 +163,7 @@ export default function LeaderboardView({
           🥛 毒奶榜
         </TabButton>
         <TabButton active={tab === "profit"} onClick={() => setTab("profit")}>
-          🥕 收益榜
+          🥕 收胡萝卜榜
         </TabButton>
       </div>
 
@@ -253,7 +253,7 @@ export default function LeaderboardView({
                     : formatProfit(profit)}
                 </div>
                 <div className="text-[10px] text-teal-deep/50 font-bold">
-                  {tab === "milk" ? "毒奶指数" : "净收益"}
+                  {tab === "milk" ? "毒奶指数" : "净胡萝卜"}
                 </div>
               </div>
             </button>
@@ -290,7 +290,7 @@ export default function LeaderboardView({
                           </div>
                           {b.status === "won" && b.payout != null && (
                             <span className="text-xs font-bold text-emerald-600 shrink-0">
-                              +🥕{b.payout}
+                              +🥕{b.payout - b.stake}
                             </span>
                           )}
                           {b.status === "lost" && (

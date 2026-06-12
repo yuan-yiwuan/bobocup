@@ -41,7 +41,7 @@ export default async function LeaderboardPage() {
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-5">
         <h1 className="text-2xl font-black text-teal-deep mb-1">🏆 排行榜</h1>
         <p className="text-sm text-teal-deep/60 font-semibold mb-1">
-          毒奶榜比谁更毒 · 收益榜比谁更富 · 点开看每个人的战绩
+          毒奶榜比谁更毒 · 收胡萝卜榜比谁胡萝卜多 · 点开看每个人的战绩
         </p>
         {lastSettleRun && <SettleRunNote iso={lastSettleRun} />}
         <LeaderboardView
