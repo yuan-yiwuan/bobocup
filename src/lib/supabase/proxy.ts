@@ -36,7 +36,11 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic =
-    path === "/login" || path.startsWith("/auth") || path === "/";
+    path === "/login" ||
+    path.startsWith("/auth") ||
+    path === "/" ||
+    path === "/privacy" ||
+    path === "/terms";
 
   // 未登录访问受保护页面 → 去登录页
   if (!user && !isPublic) {

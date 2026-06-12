@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -42,6 +43,15 @@ export default async function LoginPage() {
           <EmailLogin />
         </>
       )}
+
+      <div className="mt-2 flex gap-4 text-xs text-teal-deep/40 font-semibold">
+        <Link href="/privacy" className="underline">
+          隐私政策
+        </Link>
+        <Link href="/terms" className="underline">
+          使用条款
+        </Link>
+      </div>
     </main>
   );
 }
