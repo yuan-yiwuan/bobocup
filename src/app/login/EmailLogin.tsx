@@ -58,7 +58,7 @@ export default function EmailLogin() {
     return (
       <form onSubmit={verify} className="w-full max-w-xs flex flex-col gap-3">
         <p className="text-sm text-teal-deep/70 font-semibold">
-          邮件已发到 <b>{email}</b>：点邮件里的<b>登录链接</b>，或把验证码填进来 👇
+          验证码已发到 <b>{email}</b>，填进来 👇
         </p>
         <input
           type="text"
