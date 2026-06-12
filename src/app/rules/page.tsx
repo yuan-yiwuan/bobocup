@@ -26,24 +26,24 @@ export default async function RulesPage() {
 
         <div className="flex flex-col gap-4">
           <Section title="🥕 怎么玩">
-            <p>这是 2026 世界杯竞猜。每场比赛你可以押注三选一：</p>
+            <p>这是 2026 世界杯竞猜。每场比赛你可以三选一：</p>
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
               <li>
-                <b>主胜 / 平局 / 客胜</b>，每注默认 <b>100 根胡萝卜 🥕</b>
+                <b>主胜 / 平局 / 客胜</b>，每场默认投 <b>100 根胡萝卜 🥕</b>
               </li>
               <li>开赛前可以随便改、也可以取消</li>
-              <li>只能投注还没开赛的比赛；开赛后这场就锁定了</li>
+              <li>只能竞猜还没开赛的比赛；开赛后这场就锁定了</li>
             </ul>
           </Section>
 
-          <Section title="💰 赔率与结算">
+          <Section title="💰 倍数与结算">
             <ul className="list-disc pl-5 space-y-0.5">
-              <li>赔率来自真实博彩数据，每天更新一次</li>
+              <li>倍数来自真实数据，每天更新一次</li>
               <li>
-                <b>下注时的赔率会被锁定</b>，结算以你下单那一刻的赔率为准
+                <b>竞猜时的倍数会被锁定</b>，结算以你竞猜那一刻的倍数为准
               </li>
               <li>
-                每天比赛结束后自动结算：猜中得 <b>下注额 × 赔率</b> 根胡萝卜，猜错归零
+                每天比赛结束后自动结算：猜中得 <b>投入 × 倍数</b> 根胡萝卜，猜错归零
               </li>
             </ul>
           </Section>
@@ -52,10 +52,10 @@ export default async function RulesPage() {
             <ul className="list-disc pl-5 space-y-0.5">
               <li>在设置里选一个主队</li>
               <li>
-                当你投注 <b>自己主队所在的那场、且押主队赢</b> 时，可以下{" "}
+                当你竞猜 <b>自己主队所在的那场、且猜主队赢</b> 时，可以投{" "}
                 <b>1~3 倍</b>（最多 300 根胡萝卜）
               </li>
-              <li>押平局、押对手、或非主队比赛，一律 100 根</li>
+              <li>猜平局、猜对手、或非主队比赛，一律 100 根</li>
             </ul>
           </Section>
 
@@ -77,13 +77,13 @@ export default async function RulesPage() {
 
           <Section title="🥕 收成榜">
             <p>
-              按<b>净赚的胡萝卜</b>排，<b>胡萝卜越多排越前</b>。就是你收到的胡萝卜减去押出去的：
+              按<b>净赚的胡萝卜</b>排，<b>胡萝卜越多排越前</b>。就是你收到的胡萝卜减去投入的：
             </p>
             <div className="cartoon-btn bg-cream px-3 py-2 my-2 text-sm font-mono">
-              胡萝卜 = 回报总额 − 已结算押注总额
+              胡萝卜 = 回报总额 − 已结算投入总额
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
-              <li>押 100 赢回 200 → <b>+100</b>；押 100 全输 → <b>−100</b></li>
+              <li>投 100 赢回 200 → <b>+100</b>；投 100 全输 → <b>−100</b></li>
               <li>第一名就是<b>胡萝卜最多</b> 👑</li>
               <li>
                 顶部显示 <b>💰 昨日最赚</b> / <b>💸 昨日最赔</b>（按昨天赚的胡萝卜）

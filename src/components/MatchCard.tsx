@@ -122,7 +122,7 @@ export default function MatchCard({
         </span>
         {pick && (
           <span className="text-teal-deep">
-            已押 🥕{stake} · {pickLabel(match, pick, teams)}
+            已投 🥕{stake} · {pickLabel(match, pick, teams)}
           </span>
         )}
       </div>

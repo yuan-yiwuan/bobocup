@@ -76,7 +76,7 @@ export default function MatchesView({
       <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
         ⏳ 暂时没有可竞猜的比赛
         <p className="font-normal text-sm text-teal-deep/60 mt-2">
-          赔率每天更新，开赛后的比赛不再显示。明天再来看看？
+          倍数每天更新，开赛后的比赛不再显示。明天再来看看？
         </p>
       </div>
     );

@@ -262,7 +262,7 @@ export default function LeaderboardView({
               <div className="border-t-2 border-dashed border-teal-deep/30 px-4 py-3 bg-teal-50/50">
                 {userBets.length === 0 ? (
                   <p className="text-sm text-teal-deep/60 font-semibold py-2">
-                    还没有投注记录
+                    还没有竞猜记录
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-2">
@@ -281,7 +281,7 @@ export default function LeaderboardView({
                               {sideLabel(m, "away", teamMap)}
                             </div>
                             <div className="text-xs text-teal-deep/60">
-                              {matchDateKey(m.commence_time)} · 押{" "}
+                              {matchDateKey(m.commence_time)} · 猜{" "}
                               {pickLabel(m, b.pick, teamMap)}
                               {m.status === "finished" &&
                                 m.home_score != null &&

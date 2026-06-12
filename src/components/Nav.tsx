@@ -73,7 +73,7 @@ export default function Nav({ nickname }: { nickname: string | null }) {
                   onClick={() => setMenuOpen(false)}
                   className="px-3 py-2 rounded-lg text-sm font-bold text-teal-deep hover:bg-teal-50 text-left"
                 >
-                  📋 我的投注
+                  📋 我的竞猜
                 </Link>
                 <Link
                   href="/settings"

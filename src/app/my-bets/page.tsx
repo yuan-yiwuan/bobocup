@@ -38,9 +38,9 @@ export default async function MyBetsPage() {
     <>
       <Nav nickname={profile.nickname} />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-5">
-        <h1 className="text-2xl font-black text-teal-deep mb-1">📋 我的投注</h1>
+        <h1 className="text-2xl font-black text-teal-deep mb-1">📋 我的竞猜</h1>
         <p className="text-sm text-teal-deep/60 font-semibold mb-1">
-          未开赛的可以直接改注或取消。
+          未开赛的可以直接修改或取消。
         </p>
         {lastSettleRun && <SettleRunNote iso={lastSettleRun} />}
         <MyBetsView

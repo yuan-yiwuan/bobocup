@@ -66,9 +66,9 @@ export default function MyBetsView({
   if (bets.length === 0) {
     return (
       <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
-        还没有投注 ⚽
+        还没有竞猜 ⚽
         <p className="font-normal text-sm text-teal-deep/60 mt-2">
-          去「竞猜」页押几注吧，每注 100 根 🥕。
+          去「竞猜」页猜几场吧，每场 100 根 🥕。
         </p>
       </div>
     );
@@ -169,7 +169,7 @@ function StaticRow({
           {sideLabel(match, "home", teams)} vs {sideLabel(match, "away", teams)}
         </div>
         <div className="text-xs text-teal-deep/60">
-          {matchDateKey(match.commence_time)} {matchTime(match.commence_time)} · 押{" "}
+          {matchDateKey(match.commence_time)} {matchTime(match.commence_time)} · 猜{" "}
           {pickLabel(match, bet.pick, teams)} · 🥕{bet.stake}
           {match.status === "finished" &&
             match.home_score != null &&
