@@ -75,18 +75,18 @@ export default async function RulesPage() {
             </ul>
           </Section>
 
-          <Section title="🥕 收胡萝卜榜">
+          <Section title="🥕 收成榜">
             <p>
               按<b>净赚的胡萝卜</b>排，<b>胡萝卜越多排越前</b>。就是你收到的胡萝卜减去押出去的：
             </p>
             <div className="cartoon-btn bg-cream px-3 py-2 my-2 text-sm font-mono">
-              净胡萝卜 = 回报总额 − 已结算押注总额
+              胡萝卜 = 回报总额 − 已结算押注总额
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
               <li>押 100 赢回 200 → <b>+100</b>；押 100 全输 → <b>−100</b></li>
               <li>第一名就是<b>胡萝卜最多</b> 👑</li>
               <li>
-                顶部显示 <b>💰 昨日最赚</b> / <b>💸 昨日最赔</b>（按昨天的净胡萝卜）
+                顶部显示 <b>💰 昨日最赚</b> / <b>💸 昨日最赔</b>（按昨天赚的胡萝卜）
               </li>
             </ul>
             <p className="mt-2 text-xs text-teal-deep/60">

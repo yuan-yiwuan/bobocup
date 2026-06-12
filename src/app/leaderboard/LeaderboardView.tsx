@@ -163,7 +163,7 @@ export default function LeaderboardView({
           🥛 毒奶榜
         </TabButton>
         <TabButton active={tab === "profit"} onClick={() => setTab("profit")}>
-          🥕 收胡萝卜榜
+          🥕 收成榜
         </TabButton>
       </div>
 
@@ -253,7 +253,7 @@ export default function LeaderboardView({
                     : formatProfit(profit)}
                 </div>
                 <div className="text-[10px] text-teal-deep/50 font-bold">
-                  {tab === "milk" ? "毒奶指数" : "净胡萝卜"}
+                  {tab === "milk" ? "毒奶指数" : "胡萝卜"}
                 </div>
               </div>
             </button>
