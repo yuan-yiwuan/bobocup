@@ -26,6 +26,28 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
+  // 心跳：记录本次结算 cron 运行时间（即使下面守卫判定无可结算而早退），
+  // 前端「上次结算检查时间」据此显示，让用户知道系统在正常运转。
+  await supabase
+    .from("app_meta")
+    .upsert({ key: "last_settle_run", value: new Date().toISOString() });
+
+  // 守卫：只有当库里存在「未结算 且 已开赛 ≥2 小时（大概率已踢完）」的比赛时，
+  // 才去打 odds API。否则每小时空跑会白白消耗 the-odds-api 额度
+  // （/scores 带 daysFrom 每次 2 credits）。加时/点球延后的，下一个小时会补上。
+  const settleCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { count: pendingMatches, error: gErr } = await supabase
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .eq("settled", false)
+    .lt("commence_time", settleCutoff);
+  if (gErr) {
+    return NextResponse.json({ error: gErr.message }, { status: 500 });
+  }
+  if (!pendingMatches) {
+    return NextResponse.json({ ok: true, settledMatches: 0, settledBets: 0 });
+  }
+
   let finished;
   try {
     finished = await getFinishedMatches(3);
@@ -61,24 +83,9 @@ export async function GET(request: NextRequest) {
     const score = byId.get(match.id);
     if (!score) continue;
 
-    // 标记比赛结果
-    const { error: updErr } = await supabase
-      .from("matches")
-      .update({
-        status: "finished",
-        home_score: score.homeScore,
-        away_score: score.awayScore,
-        result: score.result,
-        settled: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", match.id);
-    if (updErr) {
-      return NextResponse.json({ error: updErr.message }, { status: 500 });
-    }
-    settledMatches++;
-
-    // 结算该场所有未结算注单
+    // 先结算该场所有未结算注单，全部成功后再标记比赛 settled。
+    // 否则中途失败会留下「比赛已 settled、注单仍 pending」的孤儿，
+    // 下次运行因 settled=false 过滤被排除，永远不会被结算。
     const { data: bets, error: bErr } = await supabase
       .from("bets")
       .select("id, pick, stake, odds_snapshot")
@@ -108,6 +115,23 @@ export async function GET(request: NextRequest) {
       }
       settledBets++;
     }
+
+    // 注单全部结算成功，最后标记比赛结果。
+    const { error: updErr } = await supabase
+      .from("matches")
+      .update({
+        status: "finished",
+        home_score: score.homeScore,
+        away_score: score.awayScore,
+        result: score.result,
+        settled: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", match.id);
+    if (updErr) {
+      return NextResponse.json({ error: updErr.message }, { status: 500 });
+    }
+    settledMatches++;
   }
 
   return NextResponse.json({ ok: true, settledMatches, settledBets });

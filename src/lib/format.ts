@@ -40,6 +40,17 @@ export function matchDateKey(iso: string): string {
   }).format(new Date(iso));
 }
 
+/** 「上次结算检查时间」展示：本地时区 月日 + HH:mm，如 "6月12日 14:30"。 */
+export function settleRunLabel(iso: string): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
+}
+
 /** 比赛开球时间（用户本地时区 HH:mm）。 */
 export function matchTime(iso: string): string {
   return new Intl.DateTimeFormat("zh-CN", {

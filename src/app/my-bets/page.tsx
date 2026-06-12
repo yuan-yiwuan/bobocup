@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
 import type { Bet, Match, Team } from "@/lib/types";
+import { getLastSettleRun } from "@/lib/meta";
+import { settleRunLabel } from "@/lib/format";
 import MyBetsView from "./MyBetsView";
 
 export const dynamic = "force-dynamic";
@@ -30,14 +32,21 @@ export default async function MyBetsPage() {
       supabase.from("teams").select("*"),
     ]);
 
+  const lastSettleRun = await getLastSettleRun(supabase);
+
   return (
     <>
       <Nav nickname={profile.nickname} />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-5">
         <h1 className="text-2xl font-black text-teal-deep mb-1">📋 我的投注</h1>
-        <p className="text-sm text-teal-deep/60 font-semibold mb-4">
+        <p className="text-sm text-teal-deep/60 font-semibold mb-1">
           未开赛的可以直接改注或取消。
         </p>
+        {lastSettleRun && (
+          <p className="text-xs text-teal-deep/40 font-semibold mb-4">
+            🔄 上次结算检查：{settleRunLabel(lastSettleRun)}
+          </p>
+        )}
         <MyBetsView
           bets={(bets ?? []) as Bet[]}
           matches={(matches ?? []) as Match[]}

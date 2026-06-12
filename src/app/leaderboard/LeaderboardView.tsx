@@ -9,6 +9,7 @@ import {
   sideLabel,
   type TeamMap,
 } from "@/lib/format";
+import { hasStarted } from "@/lib/bets";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -126,7 +127,7 @@ export default function LeaderboardView({
                           key={b.id}
                           className="flex items-center gap-2 text-sm"
                         >
-                          <BetStatusBadge bet={b} />
+                          <BetStatusBadge bet={b} match={m} />
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-teal-deep truncate">
                               {sideLabel(m, "home", teamMap)} vs{" "}
@@ -159,11 +160,14 @@ export default function LeaderboardView({
   );
 }
 
-function BetStatusBadge({ bet }: { bet: Bet }) {
+function BetStatusBadge({ bet, match }: { bet: Bet; match: Match }) {
   const map = {
     won: { text: "猜中", cls: "bg-emerald-500 text-white" },
     lost: { text: "毒奶", cls: "bg-red-400 text-white" },
-    pending: { text: "未开赛", cls: "bg-gray-300 text-teal-deep" },
+    // pending = 未结算：已开赛但还没出结果是「待结算」，未开赛才是「未开赛」
+    pending: hasStarted(match)
+      ? { text: "待结算", cls: "bg-amber-300 text-teal-deep" }
+      : { text: "未开赛", cls: "bg-gray-300 text-teal-deep" },
   } as const;
   const s = map[bet.status];
   return (
