@@ -3,8 +3,9 @@
 import { useMounted } from "@/lib/useMounted";
 
 /**
- * 微信/QQ 等内置浏览器无法完成 Google 登录（Google 封禁 WebView OAuth）。
- * 检测到时弹出遮罩，引导用户用外部浏览器打开。
+ * 微信/QQ 内置浏览器里 Google 登录用不了（Google 封禁 WebView OAuth）。
+ * 邮箱验证码登录不受影响，所以这里只做一个非阻断的提示条，
+ * 引导用户优先用邮箱登录，或点右上角在外部浏览器打开再用 Google。
  */
 export default function WechatNotice() {
   const mounted = useMounted();
@@ -15,19 +16,11 @@ export default function WechatNotice() {
   if (!inApp) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 text-white flex flex-col items-end p-5">
-      <div className="text-right">
-        <div className="text-5xl mb-2">☝️</div>
-        <p className="font-black text-lg">请点击右上角 ··· </p>
-        <p className="font-bold">选择「在浏览器打开」</p>
-      </div>
-      <div className="mt-10 self-center max-w-xs text-center text-sm leading-relaxed bg-white/10 rounded-2xl p-4">
-        <p className="mb-1">微信内置浏览器无法使用 Google 登录。</p>
-        <p>请用 Safari / Chrome 等浏览器打开本页面后再登录。</p>
-        <p className="mt-2 text-white/60 text-xs">
-          （中国大陆用户使用 Google 登录可能仍需科学上网）
-        </p>
-      </div>
+    <div className="w-full max-w-xs cartoon-card bg-cream px-4 py-3 text-sm text-teal-deep font-semibold leading-relaxed">
+      <p>📵 微信里无法用 Google 登录，请用下方<b>邮箱验证码</b>登录。</p>
+      <p className="text-xs text-teal-deep/60 mt-1">
+        想用 Google？点右上角 ··· →「在浏览器打开」。
+      </p>
     </div>
   );
 }
