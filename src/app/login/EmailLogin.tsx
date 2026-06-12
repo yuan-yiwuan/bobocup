@@ -64,7 +64,7 @@ export default function EmailLogin() {
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          placeholder="6 位验证码"
+          placeholder="邮箱验证码"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           className={`${inputCls} text-center tracking-[0.4em]`}

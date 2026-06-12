@@ -24,7 +24,7 @@ export default async function LoginPage() {
       </p>
 
       <WechatNotice />
-      <EmailLogin />
+      <LoginButton />
 
       <div className="flex items-center gap-3 w-full max-w-xs text-teal-deep/40 text-xs font-bold">
         <div className="flex-1 h-px bg-teal-deep/20" />
@@ -32,7 +32,7 @@ export default async function LoginPage() {
         <div className="flex-1 h-px bg-teal-deep/20" />
       </div>
 
-      <LoginButton />
+      <EmailLogin />
     </main>
   );
 }
