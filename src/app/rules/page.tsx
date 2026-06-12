@@ -61,15 +61,20 @@ export default async function RulesPage() {
 
           <Section title="🥛 毒奶指数">
             <p>
-              毒奶指数衡量你<b>把胡萝卜亏掉的比例</b>，<b>越高越毒</b>：
+              毒奶指数 = 你<b>净亏掉的胡萝卜数</b>，<b>越高越毒</b>：
             </p>
             <div className="cartoon-btn bg-cream px-3 py-2 my-2 text-sm font-mono">
-              毒奶指数 = (已结算下注总额 − 回报总额) ÷ 已结算下注总额 × 100%
+              毒奶指数 = 已结算押注总额 − 回报总额
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
-              <li>押 100 全输 → <b>+100%</b>（满级毒奶）</li>
-              <li>押 100 赢回 200 → <b>−100%</b>（虚假毒奶）</li>
+              <li>押 100 全输 → <b>+100</b>（满级毒奶）</li>
+              <li>押 100 赢回 200 → <b>−100</b>（虚假毒奶，其实在赚）</li>
+              <li>排行榜按毒奶指数从高到低排，第一名就是<b>当前毒奶王</b> 👑</li>
             </ul>
+            <p className="mt-2">
+              另外榜单顶部会显示 <b>🎯 昨日最准</b> 和 <b>🥛 昨日最毒</b>
+              （只看昨天开赛、已结算的比赛，按净胡萝卜算；并列就轮流展示）。
+            </p>
           </Section>
         </div>
       </main>

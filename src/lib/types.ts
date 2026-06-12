@@ -58,7 +58,10 @@ export interface LeaderboardRow {
   won_bets: number;
   total_staked: number;
   total_returned: number;
-  /** 毒奶指数（%），无已结算注单时为 null。 */
+  /**
+   * DB 视图里的旧毒奶指数（百分比）。UI 已改为客户端按
+   * total_staked − total_returned（净亏胡萝卜数）重新计算，不再使用此字段。
+   */
   milk_index: number | null;
 }
 
