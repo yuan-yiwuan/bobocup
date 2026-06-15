@@ -53,10 +53,10 @@ export default async function RulesPage() {
             <ul className="list-disc pl-5 space-y-0.5">
               <li>在设置里选一个主队</li>
               <li>
-                当你竞猜 <b>自己主队所在的那场、且猜主队赢</b> 时，可以投{" "}
+                只要是 <b>自己主队的比赛</b>，猜主队胜 / 平 / 负都可以投{" "}
                 <b>1~3 倍</b>（最多 300 根胡萝卜）
               </li>
-              <li>猜平局、猜对手、或非主队比赛，一律 100 根</li>
+              <li>非主队的比赛，一律 100 根</li>
             </ul>
           </Section>
 

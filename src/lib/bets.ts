@@ -29,7 +29,7 @@ export function hasStarted(match: Match): boolean {
 /** 把数据库报错转成中文提示。 */
 export function humanizeBetError(message: string): string {
   if (message.includes("已开赛")) return "比赛已开赛，无法操作";
-  if (message.includes("主队")) return "只有投注自己的主队才能多倍下注";
+  if (message.includes("主队")) return "只有自己主队的比赛才能多倍下注";
   if (message.includes("1~3 倍")) return "下注额必须是 100 的 1~3 倍";
   return message;
 }

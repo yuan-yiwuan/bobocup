@@ -84,8 +84,8 @@ export default function MatchCard({
         setErr(humanizeBetError(error.message));
       }
     } else {
-      // 切换到非主队项时，倍数归 1
-      const nextStake = htPick === p ? stake : 100;
+      // 主队的比赛：胜/平/负切换都保留倍数；非主队比赛一律 100
+      const nextStake = htPick != null ? stake : 100;
       setPick(p);
       setStake(nextStake);
       const msg = await save(p, nextStake);
@@ -99,13 +99,13 @@ export default function MatchCard({
   }
 
   async function onMultiplier(m: number) {
-    if (busy || started || htPick == null || pick !== htPick) return;
+    if (busy || started || htPick == null || pick == null) return;
     setErr(null);
     setBusy(true);
     const prev = stake;
     const nextStake = 100 * m;
     setStake(nextStake);
-    const msg = await save(htPick, nextStake);
+    const msg = await save(pick, nextStake);
     if (msg) {
       setStake(prev);
       setErr(humanizeBetError(msg));
@@ -164,11 +164,11 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 主队加成：选中主队项时可 1~5 倍 */}
+      {/* 主队加成：自己主队的比赛，胜/平/负任选都可 1~3 倍 */}
       {htPick && (
         <div
           className={`mt-3 flex items-center gap-2 ${
-            pick === htPick ? "" : "opacity-40"
+            pick != null ? "" : "opacity-40"
           }`}
         >
           <span className="text-xs font-bold text-teal-deep shrink-0">
@@ -178,10 +178,10 @@ export default function MatchCard({
             {[1, 2, 3].map((m) => (
               <button
                 key={m}
-                disabled={busy || started || pick !== htPick}
+                disabled={busy || started || pick == null}
                 onClick={() => onMultiplier(m)}
                 className={`w-8 h-8 cartoon-btn text-sm ${
-                  pick === htPick && multiplier === m
+                  pick != null && multiplier === m
                     ? "bg-teal-brand text-white"
                     : "bg-white text-teal-deep"
                 }`}
