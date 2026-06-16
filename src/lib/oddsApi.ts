@@ -44,8 +44,23 @@ export interface UpcomingMatch {
 }
 
 /**
+ * 三路赔率合理性检查，过滤上游偶发的错价快照。
+ * - 小数赔率必须都 > 1。
+ * - 归一化后「平局」隐含概率不应过高：真实三路盘口里平局极少超过 ~40%，
+ *   这里放宽到 50% 作为护栏。曾出现过 France/Senegal 被错标成
+ *   平 1.2 / 主 5.25（平局隐含 ~75%）的脏数据，靠这条拦下。
+ */
+function plausibleH2H(home: number, draw: number, away: number): boolean {
+  if (!(home > 1) || !(draw > 1) || !(away > 1)) return false;
+  const pHome = 1 / home;
+  const pDraw = 1 / draw;
+  const pAway = 1 / away;
+  return pDraw / (pHome + pDraw + pAway) <= 0.5;
+}
+
+/**
  * 拉取未开赛比赛 + 三路赔率（主胜/平/客胜，欧洲盘口=小数赔率）。
- * 取第一个有完整 h2h 盘口的 bookmaker。
+ * 取第一个有完整、且通过合理性检查的 h2h 盘口的 bookmaker。
  */
 export async function getUpcomingMatches(): Promise<UpcomingMatch[]> {
   const url = `${BASE}/sports/${SPORT}/odds?regions=eu&markets=h2h&oddsFormat=decimal&apiKey=${apiKey()}`;
@@ -66,7 +81,7 @@ export async function getUpcomingMatches(): Promise<UpcomingMatch[]> {
       const home = h2h.outcomes.find((o) => o.name === ev.home_team)?.price;
       const away = h2h.outcomes.find((o) => o.name === ev.away_team)?.price;
       const draw = h2h.outcomes.find((o) => o.name === "Draw")?.price;
-      if (home && away && draw) {
+      if (home && away && draw && plausibleH2H(home, draw, away)) {
         oddsHome = home;
         oddsDraw = draw;
         oddsAway = away;

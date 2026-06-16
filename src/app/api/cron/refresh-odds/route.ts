@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUpcomingMatches } from "@/lib/oddsApi";
+import { getUpcomingMatches, type UpcomingMatch } from "@/lib/oddsApi";
 import { lookupTeam } from "@/lib/teamNames";
 import { isAuthorizedCron } from "@/lib/cron";
 
@@ -62,31 +62,55 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Upsert 比赛（不覆盖已 finished 的比赛的结果字段）
+  // Upsert 比赛（不覆盖已 finished 的比赛的结果字段）。
+  // 拿到合理赔率的才写赔率列；本轮没有合理赔率的（缺盘口 / 被合理性检查拦下），
+  // 只更新身份与开赛时间，保留上一次的好赔率 —— 否则上游偶发错价会把可下注的
+  // 好赔率冲成空，而 refresh 每天只跑一次，冲掉代价很大。
   const now = new Date().toISOString();
-  const rows = matches.map((m) => ({
+  const identity = (m: UpcomingMatch) => ({
     id: m.id,
     home_team_id: teamId.get(m.homeTeam.trim().toLowerCase()) ?? null,
     away_team_id: teamId.get(m.awayTeam.trim().toLowerCase()) ?? null,
     home_team_name: m.homeTeam,
     away_team_name: m.awayTeam,
     commence_time: m.commenceTime,
-    odds_home: m.oddsHome,
-    odds_draw: m.oddsDraw,
-    odds_away: m.oddsAway,
-    odds_updated_at: now,
-  }));
+  });
 
-  const { error: upsertErr } = await supabase
-    .from("matches")
-    .upsert(rows, { onConflict: "id" });
-  if (upsertErr) {
-    return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+  const hasOdds = (m: UpcomingMatch) =>
+    m.oddsHome != null && m.oddsDraw != null && m.oddsAway != null;
+  const withOdds = matches.filter(hasOdds);
+  const withoutOdds = matches.filter((m) => !hasOdds(m));
+
+  if (withOdds.length > 0) {
+    const { error } = await supabase.from("matches").upsert(
+      withOdds.map((m) => ({
+        ...identity(m),
+        odds_home: m.oddsHome,
+        odds_draw: m.oddsDraw,
+        odds_away: m.oddsAway,
+        odds_updated_at: now,
+      })),
+      { onConflict: "id" },
+    );
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+  if (withoutOdds.length > 0) {
+    // 不含赔率列的 upsert：已存在的行其赔率不被触碰（保留旧值）。
+    const { error } = await supabase
+      .from("matches")
+      .upsert(withoutOdds.map(identity), { onConflict: "id" });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({
     ok: true,
-    matches: rows.length,
+    matches: matches.length,
+    withOdds: withOdds.length,
+    skippedOdds: withoutOdds.length,
     newTeams: toInsert.length,
   });
 }
