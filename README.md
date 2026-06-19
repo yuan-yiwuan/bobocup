@@ -43,6 +43,29 @@
 | `CRON_SECRET` | 保护 cron 路由；Vercel 设置后会自动带 `Authorization: Bearer` |
 | `NEXT_PUBLIC_SITE_URL` | 站点地址（OAuth 回调用）|
 
+## 球队大名单（players）
+
+每支国家队的世界杯大名单，前端在 `/squad`（导航下拉「👥 大名单」入口，比赛卡片上也有每队入口）。
+
+数据是**混合来源**（Transfermarkt 没有官方 API）：
+
+- 名单骨架（号码 / 位置 / 名字 / 效力俱乐部）：[openfootball 2026 世界杯名单](https://github.com/openfootball/worldcup.json)（公共域 JSON）
+- 身价 / 照片 / 是否受伤：直接抓 Transfermarkt 的「国家队=俱乐部」阵容页，按 名字+生日 关联
+
+导入步骤：
+
+1. 在 Supabase SQL Editor 运行 `supabase/migrations/0005_players.sql`（建 players 表 + RLS）
+2. 跑导入脚本（Node 20.6+，会礼貌限速抓 Transfermarkt，约 1~2 分钟）：
+
+   ```bash
+   node --env-file=.env.local scripts/seed-squads.mjs            # 全部 48 队
+   node --env-file=.env.local scripts/seed-squads.mjs Argentina  # 只跑一队（调试）
+   node --env-file=.env.local scripts/seed-squads.mjs --dry      # 不写库，只打印
+   ```
+
+   赛会期间名单基本不变，偶尔重跑即可（整队先删后插，会清掉离队旧行）。
+   缺失身价/照片的球员（未匹配到 Transfermarkt）仍会用 openfootball 数据展示。
+
 ## 定时任务
 
 `vercel.json` 已配置两个 cron（UTC）：

@@ -12,6 +12,23 @@ export interface Team {
   group_letter: string | null;
 }
 
+export interface Player {
+  id: string;
+  team_id: number;
+  shirt_number: number | null;
+  name: string;
+  position: string | null;
+  club: string | null;
+  club_country: string | null;
+  market_value: number | null;
+  photo_url: string | null;
+  injured: boolean;
+  injury_note: string | null;
+  tm_player_id: string | null;
+  dob: string | null;
+  sort_order: number | null;
+}
+
 export interface Profile {
   id: string;
   nickname: string | null;

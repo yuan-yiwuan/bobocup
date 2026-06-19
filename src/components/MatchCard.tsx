@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { Match, Pick } from "@/lib/types";
 import {
@@ -138,6 +139,32 @@ export default function MatchCard({
           {htPick === "away" && <HomeTag />}
         </span>
       </div>
+
+      {(match.home_team_id != null || match.away_team_id != null) && (
+        <div className="flex items-center justify-center gap-2 text-xs -mt-1 mb-3">
+          <span className="flex-1 text-right">
+            {match.home_team_id != null && (
+              <Link
+                href={`/squad/${match.home_team_id}`}
+                className="text-teal-deep/55 hover:text-teal-brand font-semibold"
+              >
+                📋 大名单
+              </Link>
+            )}
+          </span>
+          <span className="w-6 shrink-0" />
+          <span className="flex-1 text-left">
+            {match.away_team_id != null && (
+              <Link
+                href={`/squad/${match.away_team_id}`}
+                className="text-teal-deep/55 hover:text-teal-brand font-semibold"
+              >
+                📋 大名单
+              </Link>
+            )}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {PICKS.map((p) => {

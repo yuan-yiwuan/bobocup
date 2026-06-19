@@ -25,6 +25,17 @@ export function formatOdds(odds: number | null): string {
   return odds == null ? "—" : odds.toFixed(2);
 }
 
+/** 身价文案（欧元）：€80m / €7.5m / €750k；未知或 0 → "—"。 */
+export function formatMarketValue(eur: number | null): string {
+  if (eur == null || eur <= 0) return "—";
+  if (eur >= 1_000_000) {
+    const m = eur / 1_000_000;
+    return `€${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}m`;
+  }
+  if (eur >= 1_000) return `€${Math.round(eur / 1_000)}k`;
+  return `€${eur}`;
+}
+
 /** 净收益文案（收到 − 押注）。正=赚、负=亏；无已结算注单时为 null。 */
 export function formatProfit(net: number | null): string {
   if (net == null) return "暂无";
