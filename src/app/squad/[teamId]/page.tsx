@@ -89,8 +89,12 @@ const POS_LABEL: Record<string, string> = {
 };
 
 function PlayerRow({ p }: { p: Player }) {
-  return (
-    <div className="cartoon-card p-2.5 flex items-center gap-3">
+  const tmUrl = p.tm_player_id
+    ? `https://www.transfermarkt.com/-/profil/spieler/${p.tm_player_id}`
+    : null;
+
+  const inner = (
+    <>
       {p.photo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -111,6 +115,7 @@ function PlayerRow({ p }: { p: Player }) {
             <span className="text-teal-deep/40 mr-2">{p.shirt_number}</span>
           )}
           {p.name}
+          {tmUrl && <span className="text-teal-deep/30 text-xs ml-1">↗</span>}
         </p>
         <p className="text-xs text-teal-deep/55 font-semibold truncate mt-0.5">
           {p.position && (
@@ -123,6 +128,21 @@ function PlayerRow({ p }: { p: Player }) {
       <span className="text-base font-black text-teal-deep shrink-0">
         {formatMarketValue(p.market_value)}
       </span>
-    </div>
+    </>
+  );
+
+  const cls = "cartoon-card p-2.5 flex items-center gap-3";
+  return tmUrl ? (
+    <a
+      href={tmUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${cls} hover:bg-teal-50`}
+      title={`在 Transfermarkt 查看 ${p.name}`}
+    >
+      {inner}
+    </a>
+  ) : (
+    <div className={cls}>{inner}</div>
   );
 }
