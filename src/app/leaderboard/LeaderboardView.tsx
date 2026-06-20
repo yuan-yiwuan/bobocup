@@ -11,22 +11,12 @@ import {
   type TeamMap,
 } from "@/lib/format";
 import { hasStarted } from "@/lib/bets";
+import { rankBoard, type Board } from "@/lib/leaderboard";
 import { useMounted } from "@/lib/useMounted";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-type Tab = "milk" | "profit";
-
-/** 单个用户的榜单派生数据。 */
-interface Enriched {
-  row: LeaderboardRow;
-  settled: number;
-  lost: number;
-  /** 猜错率（毒奶指数），无已结算注单时为 null。 */
-  lossRate: number | null;
-  /** 净收益（收到 − 押注），无已结算注单时为 null。 */
-  profit: number | null;
-}
+type Tab = Board;
 
 export default function LeaderboardView({
   rows,
@@ -34,12 +24,14 @@ export default function LeaderboardView({
   matches,
   teams,
   currentUserId,
+  prevRanks,
 }: {
   rows: LeaderboardRow[];
   bets: Bet[];
   matches: Match[];
   teams: Team[];
   currentUserId: string;
+  prevRanks: { milk: Record<string, number>; profit: Record<string, number> };
 }) {
   const teamMap: TeamMap = useMemo(
     () => Object.fromEntries(teams.map((t) => [t.id, t])),
@@ -63,32 +55,11 @@ export default function LeaderboardView({
   const mounted = useMounted();
 
   // 只显示已经投过注的人（有 pending 也算参与），按当前 tab 的指标排序（null 垫底）
-  const ranked = useMemo(() => {
-    const enriched: Enriched[] = rows
-      .filter((r) => (betsByUser.get(r.id)?.length ?? 0) > 0)
-      .map((row) => {
-        const settled = row.settled_bets;
-        const lost = settled - row.won_bets;
-        return {
-          row,
-          settled,
-          lost,
-          lossRate: settled > 0 ? lost / settled : null,
-          profit: settled > 0 ? row.total_returned - row.total_staked : null,
-        };
-      });
-
-    const key = (e: Enriched) => (tab === "milk" ? e.lossRate : e.profit);
-    return enriched.sort((a, b) => {
-      const ka = key(a);
-      const kb = key(b);
-      if (ka == null) return kb == null ? 0 : 1;
-      if (kb == null) return -1;
-      if (kb !== ka) return kb - ka;
-      // 毒奶榜同率时，猜错场次多的更毒
-      return tab === "milk" ? b.lost - a.lost : 0;
-    });
-  }, [rows, betsByUser, tab]);
+  const ranked = useMemo(
+    () =>
+      rankBoard(rows, (id) => (betsByUser.get(id)?.length ?? 0) > 0, tab),
+    [rows, betsByUser, tab],
+  );
 
   // 用户 id → 昵称
   const nameOf = useMemo(() => {
@@ -223,8 +194,9 @@ export default function LeaderboardView({
               onClick={() => setExpanded(isOpen ? null : row.id)}
               className="w-full flex items-center gap-3 p-4 text-left"
             >
-              <span className="text-xl w-7 text-center shrink-0">
-                {MEDALS[i] ?? i + 1}
+              <span className="w-7 shrink-0 flex flex-col items-center">
+                <span className="text-xl">{MEDALS[i] ?? i + 1}</span>
+                <TrendBadge prev={prevRanks[tab][row.id]} live={i + 1} />
               </span>
               <div className="flex-1 min-w-0">
                 <div className="font-black text-teal-deep flex items-center gap-2 flex-wrap">
@@ -317,6 +289,21 @@ function carrotText(net: number): string {
   if (net > 0) return `+🥕${net}`;
   if (net < 0) return `−🥕${-net}`;
   return "🥕0";
+}
+
+/** 名次升降：相对最近一份每日快照（≈昨天收盘）。 */
+function TrendBadge({ prev, live }: { prev: number | undefined; live: number }) {
+  if (prev == null) {
+    return <span className="text-[9px] font-black text-ocean leading-none mt-0.5">NEW</span>;
+  }
+  const delta = prev - live; // 正 = 名次上升
+  if (delta > 0) {
+    return <span className="text-[10px] font-black text-emerald-600 leading-none mt-0.5">▲{delta}</span>;
+  }
+  if (delta < 0) {
+    return <span className="text-[10px] font-black text-red-500 leading-none mt-0.5">▼{-delta}</span>;
+  }
+  return <span className="text-[10px] font-black text-teal-deep/30 leading-none mt-0.5">–</span>;
 }
 
 function TabButton({

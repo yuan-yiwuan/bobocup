@@ -70,7 +70,7 @@ export default async function SquadPage({
             这支球队还没有名单数据
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
             {players.map((p) => (
               <PlayerRow key={p.id} p={p} />
             ))}
@@ -90,7 +90,7 @@ const POS_LABEL: Record<string, string> = {
 
 function PlayerRow({ p }: { p: Player }) {
   return (
-    <div className="cartoon-card p-2 flex items-center gap-2">
+    <div className="cartoon-card p-2.5 flex items-center gap-3">
       {p.photo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -106,23 +106,23 @@ function PlayerRow({ p }: { p: Player }) {
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-teal-deep truncate leading-tight">
+        <p className="font-bold text-teal-deep truncate">
           {p.shirt_number != null && (
-            <span className="text-teal-deep/40 mr-1">{p.shirt_number}</span>
+            <span className="text-teal-deep/40 mr-2">{p.shirt_number}</span>
           )}
           {p.name}
         </p>
-        <p className="text-[11px] text-teal-deep/55 font-semibold truncate leading-tight mt-0.5">
+        <p className="text-xs text-teal-deep/55 font-semibold truncate mt-0.5">
           {p.position && (
             <span className="text-teal-brand">{POS_LABEL[p.position] ?? p.position}</span>
           )}
           {p.position && p.club && " · "}
           {p.club}
         </p>
-        <p className="text-xs font-black text-teal-deep leading-tight mt-1">
-          {formatMarketValue(p.market_value)}
-        </p>
       </div>
+      <span className="text-base font-black text-teal-deep shrink-0">
+        {formatMarketValue(p.market_value)}
+      </span>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/refresh-odds", "schedule": "0 8 * * *" },
+    { "path": "/api/cron/rank-snapshot", "schedule": "0 7 * * *" },
     { "path": "/api/cron/settle", "schedule": "5 17 * * *" },
     { "path": "/api/cron/settle", "schedule": "5 18 * * *" },
     { "path": "/api/cron/settle", "schedule": "5 19 * * *" },

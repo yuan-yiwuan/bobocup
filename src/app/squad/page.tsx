@@ -20,18 +20,17 @@ export default async function SquadIndexPage() {
     .maybeSingle();
   if (!profile?.nickname) redirect("/onboarding");
 
-  const [{ data: teams }, { data: rows }] = await Promise.all([
+  const [{ data: teams }, { data: squadRows }] = await Promise.all([
     supabase.from("teams").select("*"),
-    supabase.from("players").select("team_id"),
+    supabase.from("squad_teams").select("team_id"),
   ]);
 
-  const countByTeam = new Map<number, number>();
-  for (const r of (rows ?? []) as { team_id: number }[]) {
-    countByTeam.set(r.team_id, (countByTeam.get(r.team_id) ?? 0) + 1);
-  }
+  const squadSet = new Set(
+    ((squadRows ?? []) as { team_id: number }[]).map((r) => r.team_id),
+  );
 
   const withSquad = ((teams ?? []) as Team[])
-    .filter((t) => countByTeam.has(t.id))
+    .filter((t) => squadSet.has(t.id))
     .sort((a, b) => a.name_zh.localeCompare(b.name_zh, "zh"));
 
   return (
@@ -56,13 +55,8 @@ export default async function SquadIndexPage() {
                 className="cartoon-card p-4 flex items-center gap-2 hover:bg-teal-50"
               >
                 <span className="text-2xl shrink-0">{t.flag_emoji ?? "⚽"}</span>
-                <span className="min-w-0">
-                  <span className="block font-black text-teal-deep truncate">
-                    {t.name_zh}
-                  </span>
-                  <span className="block text-xs text-teal-deep/60 font-semibold">
-                    {countByTeam.get(t.id)} 名球员
-                  </span>
+                <span className="block font-black text-teal-deep truncate min-w-0">
+                  {t.name_zh}
                 </span>
               </Link>
             ))}

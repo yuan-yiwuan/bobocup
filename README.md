@@ -71,7 +71,10 @@
 `vercel.json` 已配置两个 cron（UTC）：
 
 - `/api/cron/refresh-odds` —— 每天 08:00：拉未开赛比赛 + 赔率，按需建球队，upsert 比赛
+- `/api/cron/rank-snapshot` —— 每天 07:00（≈太平洋 0:00）：给两个榜各存一份排名快照，排行榜据此显示名次升降趋势（需先建 `0007` 的 rank_snapshots 表）
 - `/api/cron/settle` —— 每天 06:00：拉已结束比分，标记结果并结算注单
+
+> Vercel Cron 只支持 UTC，`0 7 * * *` 对应太平洋夏令时（PDT, UTC-7）的 0:00；冬令时（PST, UTC-8）会变成前一天 23:00，需要严格对齐可改成 `0 8 * * *`。
 
 本地手动触发：
 

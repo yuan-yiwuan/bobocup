@@ -35,6 +35,26 @@ export default async function LeaderboardPage() {
 
   const lastSettleRun = await getLastSettleRun(supabase);
 
+  // 最近一份排名快照（≈上一天收盘）→ 给排行榜算名次升降
+  const prevRanks: { milk: Record<string, number>; profit: Record<string, number> } =
+    { milk: {}, profit: {} };
+  const { data: latestSnap } = await supabase
+    .from("rank_snapshots")
+    .select("day")
+    .order("day", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestSnap?.day) {
+    const { data: snaps } = await supabase
+      .from("rank_snapshots")
+      .select("user_id, board, rank")
+      .eq("day", latestSnap.day);
+    for (const s of snaps ?? []) {
+      const board = s.board as "milk" | "profit";
+      if (board in prevRanks) prevRanks[board][s.user_id as string] = s.rank as number;
+    }
+  }
+
   return (
     <>
       <Nav nickname={profile.nickname} />
@@ -50,6 +70,7 @@ export default async function LeaderboardPage() {
           matches={(matches ?? []) as Match[]}
           teams={(teams ?? []) as Team[]}
           currentUserId={user.id}
+          prevRanks={prevRanks}
         />
       </main>
     </>
