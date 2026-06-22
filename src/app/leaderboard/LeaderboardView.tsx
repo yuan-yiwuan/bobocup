@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Bet, LeaderboardRow, Match, Team } from "@/lib/types";
 import {
   formatLossRate,
+  formatOdds,
   formatProfit,
   matchDateKey,
   pickLabel,
@@ -11,7 +12,7 @@ import {
   type TeamMap,
 } from "@/lib/format";
 import { hasStarted } from "@/lib/bets";
-import { rankBoard, type Board } from "@/lib/leaderboard";
+import { activeUserIds, rankBoard, type Board } from "@/lib/leaderboard";
 import { useMounted } from "@/lib/useMounted";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -54,11 +55,11 @@ export default function LeaderboardView({
   const [expanded, setExpanded] = useState<string | null>(null);
   const mounted = useMounted();
 
-  // 只显示已经投过注的人（有 pending 也算参与），按当前 tab 的指标排序（null 垫底）
+  // 只显示「活跃」用户：近 3 天下过注 / 近 3 天有注单结算 / 已开赛比赛投注覆盖过半。
+  const active = useMemo(() => activeUserIds(bets, matches), [bets, matches]);
   const ranked = useMemo(
-    () =>
-      rankBoard(rows, (id) => (betsByUser.get(id)?.length ?? 0) > 0, tab),
-    [rows, betsByUser, tab],
+    () => rankBoard(rows, (id) => active.has(id), tab),
+    [rows, active, tab],
   );
 
   // 用户 id → 昵称
@@ -268,6 +269,11 @@ export default function LeaderboardView({
                           {b.status === "lost" && (
                             <span className="text-xs font-bold text-red-500 shrink-0">
                               −🥕{b.stake}
+                            </span>
+                          )}
+                          {b.status === "pending" && b.odds_snapshot != null && (
+                            <span className="text-xs font-bold text-teal-deep/70 shrink-0">
+                              ×{formatOdds(b.odds_snapshot)}
                             </span>
                           )}
                         </li>

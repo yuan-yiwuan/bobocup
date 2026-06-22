@@ -60,6 +60,18 @@ export default async function RulesPage() {
             </ul>
           </Section>
 
+          <Section title="👀 谁会上榜">
+            <p>排行榜只展示<b>近期活跃</b>的玩家，满足任一条件即可上榜：</p>
+            <ul className="list-disc pl-5 mt-1 space-y-0.5">
+              <li>近 <b>3 天</b>内下过注</li>
+              <li>近 <b>3 天</b>内有注单结算</li>
+              <li>已开赛的比赛里，你的投注覆盖<b>超过一半</b></li>
+            </ul>
+            <p className="mt-2 text-xs text-teal-deep/60">
+              冷场太久会暂时从榜上隐藏，回来下注马上就回来啦。
+            </p>
+          </Section>
+
           <Section title="🥛 毒奶榜">
             <p>
               按<b>猜错率</b>排，<b>越高越毒</b>。毒奶指数就是你已结算比赛里猜错的比例：

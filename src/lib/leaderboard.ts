@@ -1,4 +1,4 @@
-import type { LeaderboardRow } from "./types";
+import type { Bet, LeaderboardRow, Match } from "./types";
 
 export type Board = "milk" | "profit";
 
@@ -45,6 +45,64 @@ export function rankBoard(
     if (kb !== ka) return kb - ka;
     return tieBreak(a, b, board);
   });
+}
+
+/** 排行榜「活跃」窗口：近 3 天。 */
+export const ACTIVE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * 排行榜只展示「活跃」用户。满足任一即上榜：
+ *   1) 近 3 天内下过注（bet.created_at）；
+ *   2) 近 3 天内有注单结算（已结算注单的 bet.updated_at ≈ 结算时刻）；
+ *   3) 已开赛的比赛里，投注覆盖超过 50%。
+ */
+export function activeUserIds(
+  bets: Pick<
+    Bet,
+    "user_id" | "match_id" | "status" | "created_at" | "updated_at"
+  >[],
+  matches: Pick<Match, "id" | "commence_time">[],
+  now: number = Date.now(),
+): Set<string> {
+  const since = now - ACTIVE_WINDOW_MS;
+
+  // 已经开赛（“已经发生”）的比赛集合
+  const startedMatchIds = new Set(
+    matches
+      .filter((m) => new Date(m.commence_time).getTime() <= now)
+      .map((m) => m.id),
+  );
+  const startedCount = startedMatchIds.size;
+
+  const recent = new Set<string>();
+  // user → 投注覆盖的、已开赛的比赛集合
+  const coveredStarted = new Map<string, Set<string>>();
+
+  for (const b of bets) {
+    // 1) 近 3 天下注
+    if (new Date(b.created_at).getTime() >= since) recent.add(b.user_id);
+    // 2) 近 3 天结算
+    if (
+      (b.status === "won" || b.status === "lost") &&
+      new Date(b.updated_at).getTime() >= since
+    ) {
+      recent.add(b.user_id);
+    }
+    // 3) 已开赛比赛的投注覆盖
+    if (startedMatchIds.has(b.match_id)) {
+      let s = coveredStarted.get(b.user_id);
+      if (!s) coveredStarted.set(b.user_id, (s = new Set()));
+      s.add(b.match_id);
+    }
+  }
+
+  const active = new Set(recent);
+  if (startedCount > 0) {
+    for (const [id, s] of coveredStarted) {
+      if (s.size / startedCount > 0.5) active.add(id);
+    }
+  }
+  return active;
 }
 
 function tieBreak(a: Enriched, b: Enriched, board: Board): number {

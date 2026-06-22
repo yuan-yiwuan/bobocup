@@ -6,6 +6,7 @@ import type { Bet, Match, Team } from "@/lib/types";
 import { hasStarted } from "@/lib/bets";
 import { useMounted } from "@/lib/useMounted";
 import {
+  formatOdds,
   matchDateKey,
   matchTime,
   pickLabel,
@@ -184,6 +185,11 @@ function StaticRow({
       {bet.status === "lost" && (
         <span className="text-sm font-bold text-red-500 shrink-0">
           −🥕{bet.stake}
+        </span>
+      )}
+      {bet.status === "pending" && bet.odds_snapshot != null && (
+        <span className="text-sm font-bold text-teal-deep/70 shrink-0">
+          ×{formatOdds(bet.odds_snapshot)}
         </span>
       )}
     </div>

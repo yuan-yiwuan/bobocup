@@ -1,8 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCron } from "@/lib/cron";
-import { rankBoard, pacificDate, type Board } from "@/lib/leaderboard";
-import type { LeaderboardRow } from "@/lib/types";
+import {
+  activeUserIds,
+  rankBoard,
+  pacificDate,
+  type Board,
+} from "@/lib/leaderboard";
+import type { Bet, LeaderboardRow, Match } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -18,20 +23,29 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  const [{ data: rows, error: rErr }, { data: betUsers, error: bErr }] =
-    await Promise.all([
-      supabase.from("leaderboard").select("*"),
-      supabase.from("bets").select("user_id"),
-    ]);
-  if (rErr || bErr) {
+  const [
+    { data: rows, error: rErr },
+    { data: bets, error: bErr },
+    { data: matches, error: mErr },
+  ] = await Promise.all([
+    supabase.from("leaderboard").select("*"),
+    supabase
+      .from("bets")
+      .select("user_id, match_id, status, created_at, updated_at"),
+    supabase.from("matches").select("id, commence_time"),
+  ]);
+  if (rErr || bErr || mErr) {
     return NextResponse.json(
-      { error: (rErr ?? bErr)?.message },
+      { error: (rErr ?? bErr ?? mErr)?.message },
       { status: 500 },
     );
   }
 
-  const betSet = new Set((betUsers ?? []).map((b) => b.user_id as string));
-  const hasBet = (id: string) => betSet.has(id);
+  const active = activeUserIds(
+    (bets ?? []) as Bet[],
+    (matches ?? []) as Match[],
+  );
+  const hasBet = (id: string) => active.has(id);
   const day = pacificDate();
 
   const snapshots: { user_id: string; board: Board; rank: number; day: string }[] =
