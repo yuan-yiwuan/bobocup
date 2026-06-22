@@ -63,12 +63,12 @@ export default async function RulesPage() {
           <Section title="👀 谁会上榜">
             <p>排行榜只展示<b>近期活跃</b>的玩家，满足任一条件即可上榜：</p>
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
-              <li>近 <b>3 天</b>内下过注</li>
-              <li>近 <b>3 天</b>内有注单结算</li>
-              <li>已开赛的比赛里，你的投注覆盖<b>超过一半</b></li>
+              <li>近 <b>3 天</b>内竞猜过</li>
+              <li>近 <b>3 天</b>内有竞猜结算</li>
+              <li>已开赛的比赛里，你的竞猜覆盖<b>超过一半</b></li>
             </ul>
             <p className="mt-2 text-xs text-teal-deep/60">
-              冷场太久会暂时从榜上隐藏，回来下注马上就回来啦。
+              冷场太久会暂时从榜上隐藏，回来竞猜马上就回来啦。
             </p>
           </Section>
 
@@ -81,9 +81,9 @@ export default async function RulesPage() {
             </div>
             <ul className="list-disc pl-5 space-y-0.5">
               <li>5 场猜错 3 场 → <b>60%</b></li>
-              <li>第一名就是<b>当前毒奶王</b> 👑</li>
+              <li>第一名就是<b>毒奶王</b> 👑</li>
               <li>
-                顶部显示 <b>🎯 昨日最准</b> / <b>🥛 昨日最毒</b>（按昨天的命中率）
+                顶部显示 <b>🎯 昨日最准</b> / <b>🥛 昨日最毒</b>（按昨天的猜对率）
               </li>
             </ul>
           </Section>

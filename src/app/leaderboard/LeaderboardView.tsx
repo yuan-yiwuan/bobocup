@@ -51,7 +51,7 @@ export default function LeaderboardView({
     return map;
   }, [bets]);
 
-  const [tab, setTab] = useState<Tab>("milk");
+  const [tab, setTab] = useState<Tab>("profit");
   const [expanded, setExpanded] = useState<string | null>(null);
   const mounted = useMounted();
 
@@ -104,7 +104,7 @@ export default function LeaderboardView({
     const maxNet = Math.max(...arr.map((e) => e.net));
     const minNet = Math.min(...arr.map((e) => e.net));
     return {
-      // 毒奶榜：命中率
+      // 毒奶榜：猜对率
       accurate: arr.filter((e) => e.winRate === maxWin).map((e) => e.id),
       accurateRate: maxWin,
       milk: arr.filter((e) => e.winRate === minWin).map((e) => e.id),
@@ -125,7 +125,7 @@ export default function LeaderboardView({
     );
   }
 
-  const kingText = tab === "milk" ? "👑 当前毒奶王" : "👑 胡萝卜最多";
+  const kingText = tab === "milk" ? "👑 毒奶王" : "👑 胡萝卜最多";
 
   return (
     <div className="flex flex-col gap-3">
@@ -148,7 +148,7 @@ export default function LeaderboardView({
                 title="🎯 昨日最准"
                 tone="good"
                 names={awards.accurate.map(nameOf)}
-                value={`命中率 ${Math.round(awards.accurateRate * 100)}%`}
+                value={`猜对率 ${Math.round(awards.accurateRate * 100)}%`}
               />
               <AwardCard
                 title="🥛 昨日最毒"
