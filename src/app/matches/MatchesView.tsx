@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MatchCard from "@/components/MatchCard";
 import type { Bet, Match, Team } from "@/lib/types";
 import { matchDateKey, type TeamMap } from "@/lib/format";
@@ -44,8 +45,32 @@ export default function MatchesView({
     return Array.from(map.entries());
   }, [matches]);
 
-  const [activeDate, setActiveDate] = useState<string | null>(null);
-  const [teamFilter, setTeamFilter] = useState<number | "all">("all");
+  // 日期 tab 与球队筛选都写进 URL（?date=&team=），这样从比赛卡进大名单再返回能回到原样。
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const activeDate = searchParams.get("date");
+  const teamParam = searchParams.get("team");
+  const teamFilter: number | "all" =
+    teamParam && Number.isInteger(Number(teamParam)) ? Number(teamParam) : "all";
+
+  function setParams(next: { date?: string | null; team?: number | "all" }) {
+    const params = new URLSearchParams(searchParams.toString());
+    if ("date" in next) {
+      if (next.date) params.set("date", next.date);
+      else params.delete("date");
+    }
+    if ("team" in next) {
+      if (next.team != null && next.team !== "all")
+        params.set("team", String(next.team));
+      else params.delete("team");
+    }
+    const q = params.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  }
+  const setActiveDate = (date: string) => setParams({ date });
+  const setTeamFilter = (team: number | "all") => setParams({ team });
 
   const teamsInPlay = useMemo(() => {
     const ids = new Set<number>();
@@ -59,7 +84,11 @@ export default function MatchesView({
   }, [matches, teams]);
 
   const filtering = teamFilter !== "all";
-  const currentDate = activeDate ?? groups[0]?.[0] ?? "";
+  // URL 里的日期若已不在列表（比如那天比赛都开赛了）则回退到第一天
+  const currentDate =
+    (activeDate && groups.some(([d]) => d === activeDate) ? activeDate : null) ??
+    groups[0]?.[0] ??
+    "";
 
   // 筛选球队时：显示该队所有比赛（跨日期）；否则按当前日期 tab
   const visible = useMemo(() => {

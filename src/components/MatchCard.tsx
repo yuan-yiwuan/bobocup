@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Match, Pick } from "@/lib/types";
 import {
@@ -46,6 +47,13 @@ export default function MatchCard({
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / 100);
+
+  // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
+  const pathname = usePathname();
+  const qs = useSearchParams().toString();
+  const squadFrom = `?from=${encodeURIComponent(
+    qs ? `${pathname}?${qs}` : pathname,
+  )}`;
 
   async function save(nextPick: Pick, nextStake: number) {
     const supabase = createClient();
@@ -145,7 +153,7 @@ export default function MatchCard({
           <span className="flex-1 text-right">
             {match.home_team_id != null && (
               <Link
-                href={`/squad/${match.home_team_id}`}
+                href={`/squad/${match.home_team_id}${squadFrom}`}
                 className="text-teal-deep/55 hover:text-teal-brand font-semibold"
               >
                 📋 大名单
@@ -156,7 +164,7 @@ export default function MatchCard({
           <span className="flex-1 text-left">
             {match.away_team_id != null && (
               <Link
-                href={`/squad/${match.away_team_id}`}
+                href={`/squad/${match.away_team_id}${squadFrom}`}
                 className="text-teal-deep/55 hover:text-teal-brand font-semibold"
               >
                 📋 大名单

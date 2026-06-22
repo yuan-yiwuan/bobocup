@@ -7,12 +7,36 @@ import { formatMarketValue } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+// 各来源页对应的返回文案
+const BACK_LABELS: Record<string, string> = {
+  "/squad": "所有球队",
+  "/matches": "竞猜",
+  "/my-bets": "我的竞猜",
+  "/leaderboard": "排行榜",
+  "/": "首页",
+};
+
+/** 根据 ?from= 决定返回去向；只接受站内绝对路径，避免开放重定向。默认回大名单列表。 */
+function resolveBack(from: string | string[] | undefined): {
+  href: string;
+  label: string;
+} {
+  const raw = Array.isArray(from) ? from[0] : from;
+  const safe = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+  if (!safe) return { href: "/squad", label: "所有球队" };
+  const path = safe.split("?")[0];
+  return { href: safe, label: BACK_LABELS[path] ?? "返回" };
+}
+
 export default async function SquadPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ teamId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { teamId } = await params;
+  const back = resolveBack((await searchParams).from);
   const id = Number(teamId);
   if (!Number.isInteger(id)) notFound();
 
@@ -49,10 +73,10 @@ export default async function SquadPage({
       <Nav nickname={profile.nickname} />
       <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-5">
         <Link
-          href="/squad"
+          href={back.href}
           className="text-sm font-bold text-teal-deep/60 hover:text-teal-brand"
         >
-          ← 所有球队
+          ← {back.label}
         </Link>
 
         <div className="cartoon-card p-4 mt-2 mb-4 flex items-center gap-3">
