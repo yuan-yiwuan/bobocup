@@ -2,7 +2,14 @@
 
 import { useMemo } from "react";
 import MatchCard from "@/components/MatchCard";
-import type { Bet, Match, Team } from "@/lib/types";
+import type {
+  Bet,
+  Match,
+  OutrightBet,
+  OutrightMarket,
+  OutrightOutcome,
+  Team,
+} from "@/lib/types";
 import { hasStarted } from "@/lib/bets";
 import { useMounted } from "@/lib/useMounted";
 import {
@@ -20,12 +27,18 @@ export default function MyBetsView({
   teams,
   userId,
   userHomeTeamId,
+  outrightBets,
+  outrightMarkets,
+  outrightOutcomes,
 }: {
   bets: Bet[];
   matches: Match[];
   teams: Team[];
   userId: string;
   userHomeTeamId: number | null;
+  outrightBets: OutrightBet[];
+  outrightMarkets: OutrightMarket[];
+  outrightOutcomes: OutrightOutcome[];
 }) {
   const mounted = useMounted();
   const teamMap: TeamMap = useMemo(
@@ -35,6 +48,14 @@ export default function MyBetsView({
   const matchMap = useMemo(
     () => Object.fromEntries(matches.map((m) => [m.id, m])),
     [matches],
+  );
+  const marketMap = useMemo(
+    () => Object.fromEntries(outrightMarkets.map((m) => [m.id, m])),
+    [outrightMarkets],
+  );
+  const outcomeMap = useMemo(
+    () => Object.fromEntries(outrightOutcomes.map((o) => [o.id, o])),
+    [outrightOutcomes],
   );
 
   const sorted = useMemo(
@@ -64,7 +85,7 @@ export default function MyBetsView({
     }
   }
 
-  if (bets.length === 0) {
+  if (bets.length === 0 && outrightBets.length === 0) {
     return (
       <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
         还没有竞猜 ⚽
@@ -122,6 +143,72 @@ export default function MyBetsView({
             ))}
           </div>
         </Group>
+      )}
+
+      {outrightBets.length > 0 && (
+        <Group title={`🏆 特别竞猜（${outrightBets.length}）`}>
+          <div className="flex flex-col gap-2">
+            {outrightBets.map((bet) => (
+              <OutrightRow
+                key={bet.id}
+                bet={bet}
+                market={marketMap[bet.market_id]}
+                outcome={outcomeMap[bet.outcome_id]}
+              />
+            ))}
+          </div>
+        </Group>
+      )}
+    </div>
+  );
+}
+
+function OutrightRow({
+  bet,
+  market,
+  outcome,
+}: {
+  bet: OutrightBet;
+  market: OutrightMarket | undefined;
+  outcome: OutrightOutcome | undefined;
+}) {
+  const badge =
+    bet.status === "won"
+      ? { text: "猜中", cls: "bg-emerald-500 text-white" }
+      : bet.status === "lost"
+        ? { text: "毒奶", cls: "bg-red-400 text-white" }
+        : { text: "进行中", cls: "bg-gray-300 text-teal-deep" };
+  const name = outcome?.name_zh ?? outcome?.name ?? "—";
+
+  return (
+    <div className="cartoon-card p-3 flex items-center gap-2">
+      <span
+        className={`shrink-0 text-xs font-bold px-2 py-1 rounded-full border-2 border-[#0f3d3e] ${badge.cls}`}
+      >
+        {badge.text}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-teal-deep truncate text-sm">
+          {market?.title ?? "特别竞猜"}
+        </div>
+        <div className="text-xs text-teal-deep/60">
+          猜 {name} · 🥕{bet.stake}
+        </div>
+      </div>
+      {bet.status === "won" && bet.payout != null && (
+        <span className="text-sm font-bold text-emerald-600 shrink-0">
+          +🥕{bet.payout - bet.stake}
+        </span>
+      )}
+      {bet.status === "lost" && (
+        <span className="text-sm font-bold text-red-500 shrink-0">
+          −🥕{bet.stake}
+        </span>
+      )}
+      {bet.status === "pending" && bet.odds_snapshot != null && (
+        <span className="text-sm font-bold text-teal-deep/70 shrink-0">
+          ×{formatOdds(bet.odds_snapshot)}
+        </span>
       )}
     </div>
   );

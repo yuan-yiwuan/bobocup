@@ -85,3 +85,33 @@ export const TEAM_NAMES: Record<string, { zh: string; flag: string }> = {
 export function lookupTeam(nameEn: string): { zh: string; flag: string } {
   return TEAM_NAMES[nameEn.trim().toLowerCase()] ?? { zh: nameEn, flag: "⚽" };
 }
+
+/**
+ * 同一支球队在 openfootball / Polymarket / teams 表里的拼写差异别名表。
+ * 左边是各源 teamKey 归一化后的「变体」，右边是规范 key（与 teams.name_en 同口径）。
+ * 例：Polymarket 用 Turkiye / Czechia / Congo DR / Bosnia-Herzegovina。
+ */
+const TEAM_ALIASES: Record<string, string> = {
+  turkiye: "turkey",
+  czechia: "czech republic",
+  "congo dr": "dr congo",
+  "bosnia herzegovina": "bosnia and herzegovina",
+  "united states": "usa",
+  "korea republic": "south korea",
+};
+
+/**
+ * 跨数据源统一的球队匹配 key：去音符、& / - 转空格、压空格、小写，再过别名表。
+ * openfootball、Polymarket、teams.name_en 都走这个，保证三方对齐。
+ */
+export function teamKey(name: string): string {
+  const norm = name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+  return TEAM_ALIASES[norm] ?? norm;
+}
