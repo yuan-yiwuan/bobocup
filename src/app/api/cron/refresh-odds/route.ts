@@ -1,22 +1,38 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getKnockoutFixtures, type KnockoutFixture } from "@/lib/openfootball";
-import { getAdvanceProb } from "@/lib/polymarketApi";
+import {
+  getAdvanceProb,
+  getOutrightMarket,
+  OUTRIGHT_SLUGS,
+} from "@/lib/polymarketApi";
 import { isAuthorizedCron } from "@/lib/cron";
+import { teamKey } from "@/lib/teamNames";
+import { STAKE } from "@/lib/types";
+
+type TeamInfo = { id: number; nameEn: string; nameZh: string };
+
+/** 要维护的长期盘（金靴 / 夺冠）。 */
+const OUTRIGHTS = [
+  {
+    id: OUTRIGHT_SLUGS.golden_boot,
+    title: "金靴（最佳射手）",
+    kind: "golden_boot",
+    outcome_label: "球员",
+  },
+  {
+    id: OUTRIGHT_SLUGS.champion,
+    title: "夺冠球队",
+    kind: "champion",
+    outcome_label: "球队",
+  },
+] as const;
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** 队名归一化，用于 openfootball ↔ teams 表匹配（与 polymarketApi 同口径）。 */
-function canon(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/&/g, "and")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+/** 队名归一化（openfootball / Polymarket / teams 三方对齐），统一走 teamKey。 */
+const canon = teamKey;
 
 /** 晋级概率 → 小数赔率（去水后的「公平」赔率），保留两位。 */
 function probToOdds(p: number): number {
@@ -47,11 +63,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // teams：canon(name_en) → { id, name_en }
-  const { data: teamRows } = await supabase.from("teams").select("id, name_en");
-  const teamByName = new Map<string, { id: number; nameEn: string }>();
+  // teams：canon(name_en) → { id, name_en, name_zh }
+  const { data: teamRows } = await supabase
+    .from("teams")
+    .select("id, name_en, name_zh");
+  const teamByName = new Map<string, TeamInfo>();
   for (const t of teamRows ?? []) {
-    teamByName.set(canon(t.name_en), { id: t.id as number, nameEn: t.name_en });
+    teamByName.set(canon(t.name_en), {
+      id: t.id as number,
+      nameEn: t.name_en,
+      nameZh: t.name_zh as string,
+    });
   }
 
   const now = Date.now();
@@ -136,11 +158,126 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ── 长期盘（金靴/夺冠）：刷新概率/倍数 + Polymarket 结果结算 ──
+  // 与淘汰赛刷新隔离：outright 表/接口出问题不应拖垮赛程刷新。
+  let outright: unknown = null;
+  try {
+    outright = await refreshOutrights(supabase, teamByName);
+  } catch (e) {
+    outright = { error: String(e instanceof Error ? e.message : e) };
+  }
+
   return NextResponse.json({
     ok: true,
     fixtures: fixtures.length,
     withOdds: withOdds.length,
     skippedNoProb,
     skippedUnknownTeam,
+    outright,
   });
+}
+
+/**
+ * 刷新金靴/夺冠两个长期盘：
+ *  - upsert 盘 + 各候选项（概率/倍数/图片/是否出局），夺冠项关联球队。
+ *  - 若 Polymarket 已分晓（某项 closed 且 Yes≈1），结算该盘的所有注单。
+ *  已结算的盘跳过（不再刷新）。
+ */
+async function refreshOutrights(
+  supabase: ReturnType<typeof createAdminClient>,
+  teamByName: Map<string, TeamInfo>,
+) {
+  const nowIso = new Date().toISOString();
+  const summary: Record<string, unknown> = {};
+
+  for (const cfg of OUTRIGHTS) {
+    // 盘元数据 upsert（不碰 settled / result_outcome_id）
+    await supabase.from("outright_markets").upsert(
+      {
+        id: cfg.id,
+        title: cfg.title,
+        kind: cfg.kind,
+        outcome_label: cfg.outcome_label,
+        updated_at: nowIso,
+      },
+      { onConflict: "id" },
+    );
+
+    // 已结算的盘不再刷新
+    const { data: mkt } = await supabase
+      .from("outright_markets")
+      .select("settled")
+      .eq("id", cfg.id)
+      .maybeSingle();
+    if (mkt?.settled) {
+      summary[cfg.kind] = "already settled";
+      continue;
+    }
+
+    const market = await getOutrightMarket(cfg.id);
+
+    // upsert 候选项
+    const rows = market.outcomes.map((o, i) => {
+      const team =
+        cfg.kind === "champion" ? teamByName.get(canon(o.name)) : undefined;
+      return {
+        market_id: cfg.id,
+        name: o.name,
+        name_zh: team?.nameZh ?? null,
+        team_id: team?.id ?? null,
+        prob: o.prob,
+        odds: o.prob > 0 ? Math.round((1 / o.prob) * 100) / 100 : null,
+        image_url: o.image,
+        sort_order: i,
+        closed: o.closed,
+        updated_at: nowIso,
+      };
+    });
+    if (rows.length > 0) {
+      const { error } = await supabase
+        .from("outright_outcomes")
+        .upsert(rows, { onConflict: "market_id,name" });
+      if (error) throw new Error(`${cfg.kind} outcomes: ${error.message}`);
+    }
+
+    // 结算
+    if (market.resolved && market.winnerName) {
+      const { data: winRow } = await supabase
+        .from("outright_outcomes")
+        .select("id")
+        .eq("market_id", cfg.id)
+        .eq("name", market.winnerName)
+        .maybeSingle();
+      if (winRow) {
+        const winnerId = winRow.id as number;
+        const { data: bets } = await supabase
+          .from("outright_bets")
+          .select("id, outcome_id, stake, odds_snapshot")
+          .eq("market_id", cfg.id)
+          .eq("status", "pending");
+        let settledBets = 0;
+        for (const bet of bets ?? []) {
+          const won = bet.outcome_id === winnerId;
+          const odds = bet.odds_snapshot ?? 1;
+          const stake = bet.stake ?? STAKE;
+          const payout = won ? Math.round(stake * odds) : 0;
+          const { error } = await supabase
+            .from("outright_bets")
+            .update({ status: won ? "won" : "lost", payout })
+            .eq("id", bet.id);
+          if (error) throw new Error(`${cfg.kind} settle: ${error.message}`);
+          settledBets++;
+        }
+        await supabase
+          .from("outright_markets")
+          .update({ settled: true, result_outcome_id: winnerId, updated_at: nowIso })
+          .eq("id", cfg.id);
+        summary[cfg.kind] = { settled: true, winner: market.winnerName, settledBets };
+        continue;
+      }
+    }
+    summary[cfg.kind] = { outcomes: rows.length, resolved: market.resolved };
+  }
+
+  return summary;
 }

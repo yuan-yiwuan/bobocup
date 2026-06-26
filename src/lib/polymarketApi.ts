@@ -10,6 +10,8 @@
  * 既补上「不互斥」的缺口，也顺手去掉水位。
  */
 
+import { teamKey } from "./teamNames";
+
 const BASE = "https://gamma-api.polymarket.com";
 
 /** 淘汰赛轮次 → 对应「进入下一阶段」的 Gamma event slug（均已核实存在） */
@@ -35,12 +37,22 @@ interface GammaMarket {
   outcomePrices?: string; // JSON 字符串，如 '["0.1365","0.8635"]'
   active?: boolean;
   closed?: boolean;
+  image?: string;
+  icon?: string;
 }
 interface GammaEvent {
   slug: string;
   title: string;
   markets: GammaMarket[];
 }
+
+/** outright/futures 长期盘的 slug（与单场无关）。均已核实存在。 */
+export const OUTRIGHT_SLUGS = {
+  golden_boot: "world-cup-golden-boot-winner",
+  champion: "world-cup-winner",
+} as const;
+
+export type OutrightKind = keyof typeof OUTRIGHT_SLUGS;
 
 /** outcomes / outcomePrices 在 Gamma 里是 JSON 字符串，安全解析成数组 */
 function parseJsonArray(v: string | undefined): string[] {
@@ -53,19 +65,8 @@ function parseJsonArray(v: string | undefined): string[] {
   }
 }
 
-/**
- * 队名归一化：用于跨数据源匹配（Polymarket / openfootball / teams 表三方对齐）。
- * 去音符（Curaçao→curacao）、& → and、压空格、小写。
- */
-function normName(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/&/g, "and")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+/** 队名归一化：跨数据源匹配统一走 teamKey（含别名表）。 */
+const normName = teamKey;
 
 /**
  * 拉某个 reach-stage 盘，返回 归一化队名 → Yes 隐含概率（0–1）。
@@ -129,4 +130,70 @@ export async function getAdvanceProb(
     a: { team: teamA, prob: yesA / sum, rawYes: yesA },
     b: { team: teamB, prob: yesB / sum, rawYes: yesB },
   };
+}
+
+// ── outright / futures 长期盘（金靴、夺冠……） ──────────────────────
+
+export interface OutrightOutcome {
+  /** Polymarket groupItemTitle，如 "Lionel Messi" / "France" */
+  name: string;
+  /** 当前隐含概率（Yes 价，0–1） */
+  prob: number;
+  /** 选项图片（球员头像 / 队徽），可空 */
+  image: string | null;
+  /** 该子市场是否已结算 */
+  closed: boolean;
+  /** 是否已结算为获胜项（closed 且 Yes≈1） */
+  isWinner: boolean;
+}
+
+export interface OutrightMarket {
+  slug: string;
+  outcomes: OutrightOutcome[];
+  /** 整盘是否已分晓（存在获胜项） */
+  resolved: boolean;
+  /** 获胜项名（未分晓为 null） */
+  winnerName: string | null;
+}
+
+/**
+ * 拉一个 outright 盘（金靴/夺冠这类多选互斥盘，negRisk）。
+ * 这些盘是几十个 Yes/No 子市场，Yes 价之和 ≈ 1，可直接当瓜分概率。
+ * 结算：某子市场 closed 且 Yes≈1 即为获胜项（被淘汰的项 closed 且 Yes≈0）。
+ */
+export async function getOutrightMarket(slug: string): Promise<OutrightMarket> {
+  const res = await fetch(`${BASE}/events?slug=${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`polymarket events ${res.status}: ${await res.text()}`);
+  }
+  const events: GammaEvent[] = await res.json();
+  const event = events[0];
+  if (!event) throw new Error(`polymarket: 未找到 event slug=${slug}`);
+
+  const outcomes: OutrightOutcome[] = [];
+  let winnerName: string | null = null;
+  for (const m of event.markets ?? []) {
+    const name = m.groupItemTitle;
+    if (!name) continue;
+    const labels = parseJsonArray(m.outcomes);
+    const prices = parseJsonArray(m.outcomePrices);
+    const yesIdx = labels.findIndex((o) => o.toLowerCase() === "yes");
+    const yes = Number(prices[yesIdx >= 0 ? yesIdx : 0]);
+    if (!Number.isFinite(yes)) continue;
+    const closed = !!m.closed;
+    const isWinner = closed && yes >= 0.9;
+    if (isWinner) winnerName = name;
+    outcomes.push({
+      name,
+      prob: yes,
+      image: m.image ?? m.icon ?? null,
+      closed,
+      isWinner,
+    });
+  }
+  // 概率高到低
+  outcomes.sort((a, b) => b.prob - a.prob);
+  return { slug, outcomes, resolved: winnerName != null, winnerName };
 }

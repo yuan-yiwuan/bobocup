@@ -91,3 +91,44 @@ export interface LeaderboardRow {
 
 /** 每注固定下注的胡萝卜数量。 */
 export const STAKE = 100;
+
+// ── 长期盘（outright/futures）：金靴、夺冠…… ──────────────────────
+
+export type OutrightKind = "golden_boot" | "champion";
+
+export interface OutrightMarket {
+  id: string; // Polymarket event slug
+  title: string;
+  kind: OutrightKind;
+  outcome_label: string; // '球员' / '球队'
+  settled: boolean;
+  result_outcome_id: number | null;
+  updated_at: string;
+}
+
+export interface OutrightOutcome {
+  id: number;
+  market_id: string;
+  name: string;
+  name_zh: string | null;
+  team_id: number | null;
+  prob: number | null;
+  odds: number | null;
+  image_url: string | null;
+  sort_order: number | null;
+  closed: boolean;
+  updated_at: string;
+}
+
+export interface OutrightBet {
+  id: string;
+  user_id: string;
+  market_id: string;
+  outcome_id: number;
+  stake: number;
+  odds_snapshot: number | null;
+  payout: number | null;
+  status: BetStatus;
+  created_at: string;
+  updated_at: string;
+}
