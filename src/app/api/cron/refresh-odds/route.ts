@@ -1,14 +1,34 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUpcomingMatches, type UpcomingMatch } from "@/lib/oddsApi";
-import { lookupTeam } from "@/lib/teamNames";
+import { getKnockoutFixtures, type KnockoutFixture } from "@/lib/openfootball";
+import { getAdvanceProb } from "@/lib/polymarketApi";
 import { isAuthorizedCron } from "@/lib/cron";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+/** 队名归一化，用于 openfootball ↔ teams 表匹配（与 polymarketApi 同口径）。 */
+function canon(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/&/g, "and")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** 晋级概率 → 小数赔率（去水后的「公平」赔率），保留两位。 */
+function probToOdds(p: number): number {
+  return Math.round((1 / p) * 100) / 100;
+}
+
 /**
- * 每日刷新：从 the-odds-api 拉未开赛比赛 + 赔率，按需建球队，upsert 比赛。
+ * 每日刷新（淘汰赛）：
+ *  - 赛程/对阵：openfootball（只取双方都是真队名的场次，占位的跳过）
+ *  - 晋级概率→赔率：Polymarket reach-stage 盘，双方归一化
+ *  - 只处理尚未开赛的场次；拿不到概率的只写身份、保留旧赔率（下次重试）
+ * 不再使用 the-odds-api。
  */
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request)) {
@@ -17,9 +37,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
-  let matches;
+  let fixtures: KnockoutFixture[];
   try {
-    matches = await getUpcomingMatches();
+    fixtures = await getKnockoutFixtures();
   } catch (e) {
     return NextResponse.json(
       { error: String(e instanceof Error ? e.message : e) },
@@ -27,80 +47,90 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // 现有球队：lower(name_en) → id
-  const { data: existing } = await supabase
-    .from("teams")
-    .select("id, name_en");
-  const teamId = new Map<string, number>();
-  for (const t of existing ?? []) {
-    teamId.set(t.name_en.trim().toLowerCase(), t.id as number);
+  // teams：canon(name_en) → { id, name_en }
+  const { data: teamRows } = await supabase.from("teams").select("id, name_en");
+  const teamByName = new Map<string, { id: number; nameEn: string }>();
+  for (const t of teamRows ?? []) {
+    teamByName.set(canon(t.name_en), { id: t.id as number, nameEn: t.name_en });
   }
 
-  // 收集 API 中出现但库里没有的球队，插入
-  const seen = new Set<string>();
-  const toInsert: { name_zh: string; name_en: string; flag_emoji: string }[] =
-    [];
-  for (const m of matches) {
-    for (const name of [m.homeTeam, m.awayTeam]) {
-      const key = name.trim().toLowerCase();
-      if (teamId.has(key) || seen.has(key)) continue;
-      seen.add(key);
-      const info = lookupTeam(name);
-      toInsert.push({ name_zh: info.zh, name_en: name, flag_emoji: info.flag });
-    }
-  }
-  if (toInsert.length > 0) {
-    const { data: inserted, error } = await supabase
-      .from("teams")
-      .insert(toInsert)
-      .select("id, name_en");
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    for (const t of inserted ?? []) {
-      teamId.set(t.name_en.trim().toLowerCase(), t.id as number);
-    }
+  const now = Date.now();
+  const nowIso = new Date().toISOString();
+
+  interface Row {
+    id: string;
+    home_team_id: number;
+    away_team_id: number;
+    home_team_name: string;
+    away_team_name: string;
+    commence_time: string;
+    bet_type: "advance";
+    odds_home?: number;
+    odds_away?: number;
+    odds_draw?: null;
+    odds_updated_at?: string;
   }
 
-  // Upsert 比赛（不覆盖已 finished 的比赛的结果字段）。
-  // 拿到合理赔率的才写赔率列；本轮没有合理赔率的（缺盘口 / 被合理性检查拦下），
-  // 只更新身份与开赛时间，保留上一次的好赔率 —— 否则上游偶发错价会把可下注的
-  // 好赔率冲成空，而 refresh 每天只跑一次，冲掉代价很大。
-  const now = new Date().toISOString();
-  const identity = (m: UpcomingMatch) => ({
-    id: m.id,
-    home_team_id: teamId.get(m.homeTeam.trim().toLowerCase()) ?? null,
-    away_team_id: teamId.get(m.awayTeam.trim().toLowerCase()) ?? null,
-    home_team_name: m.homeTeam,
-    away_team_name: m.awayTeam,
-    commence_time: m.commenceTime,
-  });
+  const withOdds: Row[] = [];
+  const withoutOdds: Row[] = [];
+  let skippedUnknownTeam = 0;
+  let skippedNoProb = 0;
 
-  const hasOdds = (m: UpcomingMatch) =>
-    m.oddsHome != null && m.oddsDraw != null && m.oddsAway != null;
-  const withOdds = matches.filter(hasOdds);
-  const withoutOdds = matches.filter((m) => !hasOdds(m));
+  for (const f of fixtures) {
+    // 只处理尚未开赛、时间可解析的场次
+    if (!f.commenceTime || new Date(f.commenceTime).getTime() <= now) continue;
+
+    const home = teamByName.get(canon(f.team1));
+    const away = teamByName.get(canon(f.team2));
+    if (!home || !away) {
+      skippedUnknownTeam++;
+      continue;
+    }
+
+    const identity: Row = {
+      id: f.id,
+      home_team_id: home.id,
+      away_team_id: away.id,
+      home_team_name: home.nameEn,
+      away_team_name: away.nameEn,
+      commence_time: f.commenceTime,
+      bet_type: "advance",
+    };
+
+    // 晋级概率（拿不到则只写身份，保留上次赔率）
+    let probs = null;
+    try {
+      probs = await getAdvanceProb(home.nameEn, away.nameEn, f.round);
+    } catch {
+      probs = null;
+    }
+    if (probs) {
+      withOdds.push({
+        ...identity,
+        odds_home: probToOdds(probs.a.prob),
+        odds_away: probToOdds(probs.b.prob),
+        odds_draw: null,
+        odds_updated_at: nowIso,
+      });
+    } else {
+      skippedNoProb++;
+      withoutOdds.push(identity);
+    }
+  }
 
   if (withOdds.length > 0) {
-    const { error } = await supabase.from("matches").upsert(
-      withOdds.map((m) => ({
-        ...identity(m),
-        odds_home: m.oddsHome,
-        odds_draw: m.oddsDraw,
-        odds_away: m.oddsAway,
-        odds_updated_at: now,
-      })),
-      { onConflict: "id" },
-    );
+    const { error } = await supabase
+      .from("matches")
+      .upsert(withOdds, { onConflict: "id" });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
   if (withoutOdds.length > 0) {
-    // 不含赔率列的 upsert：已存在的行其赔率不被触碰（保留旧值）。
+    // 不含赔率列：已存在行的赔率不被触碰（保留旧值）
     const { error } = await supabase
       .from("matches")
-      .upsert(withoutOdds.map(identity), { onConflict: "id" });
+      .upsert(withoutOdds, { onConflict: "id" });
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -108,9 +138,9 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    matches: matches.length,
+    fixtures: fixtures.length,
     withOdds: withOdds.length,
-    skippedOdds: withoutOdds.length,
-    newTeams: toInsert.length,
+    skippedNoProb,
+    skippedUnknownTeam,
   });
 }

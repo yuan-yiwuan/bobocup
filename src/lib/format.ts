@@ -18,7 +18,9 @@ export function sideLabel(
 /** 某个投注选项的文案。 */
 export function pickLabel(match: Match, pick: Pick, teams: TeamMap): string {
   if (pick === "draw") return "平局";
-  return sideLabel(match, pick, teams);
+  const side = sideLabel(match, pick, teams);
+  // 淘汰赛：选项是「谁晋级」而非「谁胜」
+  return match.bet_type === "advance" ? `${side} 晋级` : side;
 }
 
 export function formatOdds(odds: number | null): string {
