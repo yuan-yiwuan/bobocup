@@ -20,7 +20,8 @@ import {
   type TeamMap,
 } from "@/lib/format";
 
-const PICKS: Pick[] = ["home", "draw", "away"];
+const H2H_PICKS: Pick[] = ["home", "draw", "away"];
+const ADVANCE_PICKS: Pick[] = ["home", "away"];
 
 export default function MatchCard({
   match,
@@ -47,6 +48,8 @@ export default function MatchCard({
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / 100);
+  const isAdvance = match.bet_type === "advance";
+  const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -174,8 +177,8 @@ export default function MatchCard({
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2">
-        {PICKS.map((p) => {
+      <div className={`grid ${isAdvance ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
+        {picks.map((p) => {
           const selected = pick === p;
           return (
             <button
@@ -189,7 +192,11 @@ export default function MatchCard({
               }`}
             >
               <span className="text-sm leading-tight text-center">
-                {p === "draw" ? "平局" : `${sideLabel(match, p, teams)}胜`}
+                {p === "draw"
+                  ? "平局"
+                  : isAdvance
+                    ? `${sideLabel(match, p, teams)} 晋级`
+                    : `${sideLabel(match, p, teams)}胜`}
               </span>
               <span className="text-xs opacity-70">
                 {formatOdds(pickOdds(match, p))}

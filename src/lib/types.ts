@@ -3,6 +3,12 @@
 export type Pick = "home" | "draw" | "away";
 export type BetStatus = "pending" | "won" | "lost";
 export type MatchStatus = "scheduled" | "finished";
+/**
+ * 玩法类型：
+ *  - h2h     小组赛三路（主/平/客），赔率来自 the-odds-api（历史数据）
+ *  - advance 淘汰赛二路（谁晋级），赔率来自 Polymarket 晋级概率，结算用 openfootball
+ */
+export type BetType = "h2h" | "advance";
 
 export interface Team {
   id: number;
@@ -44,6 +50,7 @@ export interface Match {
   away_team_name: string;
   commence_time: string;
   status: MatchStatus;
+  bet_type: BetType;
   home_score: number | null;
   away_score: number | null;
   odds_home: number | null;

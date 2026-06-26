@@ -6,10 +6,6 @@ import MatchesView from "./MatchesView";
 
 export const dynamic = "force-dynamic";
 
-// 暂时隐藏淘汰赛（本周日 2026-06-28 起开打，PT 00:00 = 07:00 UTC），
-// 等淘汰赛玩法改好后再放开 / 删除这条上限。
-const KNOCKOUT_CUTOFF = "2026-06-28T07:00:00Z";
-
 export default async function MatchesPage() {
   const supabase = await createClient();
   const {
@@ -32,7 +28,6 @@ export default async function MatchesPage() {
         .from("matches")
         .select("*")
         .gt("commence_time", nowIso)
-        .lt("commence_time", KNOCKOUT_CUTOFF)
         .order("commence_time"),
       supabase.from("teams").select("*"),
       supabase.from("bets").select("*").eq("user_id", user.id),
