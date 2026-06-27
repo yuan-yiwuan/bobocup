@@ -155,19 +155,10 @@ export default function OutrightCard({
   const pendingOutcome = outcomes.find((o) => o.id === pendingId) ?? null;
 
   return (
-    <div
-      className={`cartoon-card p-4 ${
-        highlight
-          ? "ring-4 ring-yellow-300 ring-offset-2 animate-[pulse_2.5s_ease-in-out_infinite] bg-gradient-to-br from-yellow-50 to-white"
-          : ""
-      }`}
-    >
+    <div className={`cartoon-card p-4 ${highlight ? "daily-glow" : ""}`}>
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-black text-teal-deep text-lg">
-          <span className={highlight ? "inline-block animate-bounce" : ""}>
-            {titleEmoji}
-          </span>{" "}
-          {market.title}
+          {titleEmoji} {market.title}
         </h3>
         {settled ? (
           <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-1 rounded-full border-2 border-[#0f3d3e]">
