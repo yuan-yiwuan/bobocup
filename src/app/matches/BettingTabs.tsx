@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MatchesView from "./MatchesView";
 import OutrightCard from "@/components/OutrightCard";
@@ -43,17 +43,28 @@ export default function BettingTabs({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // 每日竞猜还没投 → 默认落到「特别竞猜」tab（登录后引导去猜）
   const dailyUnbet = !!dailyMarket && !dailyBet;
   const tabParam = searchParams.get("tab");
-  const tab =
-    tabParam === "special"
-      ? "special"
-      : tabParam === "matches"
-        ? "matches"
-        : dailyUnbet
-          ? "special"
-          : "matches";
+  const tab = tabParam === "special" ? "special" : "matches";
+
+  // 每天第一次进竞猜页（该设备），若今天的每日竞猜还没投，引导去「特别竞猜」一次。
+  // 用 featured_date 作为「今天」的 key；当天再进就不打扰了。
+  const nudgeKey = dailyMarket?.featured_date ?? null;
+  useEffect(() => {
+    if (tabParam || !dailyUnbet || !nudgeKey) return;
+    try {
+      const STORE = "bobocup-daily-nudge";
+      if (localStorage.getItem(STORE) === nudgeKey) return; // 今天已引导过
+      localStorage.setItem(STORE, nudgeKey);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "special");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    } catch {
+      /* localStorage 不可用则忽略 */
+    }
+    // 仅首次挂载执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setTab(next: "matches" | "special") {
     const params = new URLSearchParams(searchParams.toString());
