@@ -107,7 +107,7 @@ export default function BettingTabs({
       ) : (
         <div className="flex flex-col gap-4">
           <p className="text-xs text-teal-deep/60 font-semibold">
-            和单场无关的长期竞猜：一直开放到揭晓，倍数每天更新，下注那刻锁定。
+            和单场无关的长期竞猜：一直开放到揭晓，倍数每天更新，竞猜那刻锁定。
           </p>
           {outrightMarkets.map((m) => (
             <OutrightCard

@@ -100,7 +100,7 @@ export default function OutrightCard({
         )}
       </div>
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-3">
-        <span>每人一注 · 🥕200 · 一旦下注不可修改</span>
+        <span>每人一注 · 🥕200 · 一旦竞猜不可修改</span>
         {placedOutcome && (
           <span className="text-teal-deep">
             已投 {outcomeName(placedOutcome)}
@@ -165,7 +165,7 @@ export default function OutrightCard({
             className="cartoon-card bg-white p-5 w-full max-w-xs flex flex-col gap-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <h4 className="font-black text-teal-deep text-lg">确认下注</h4>
+            <h4 className="font-black text-teal-deep text-lg">确认竞猜</h4>
             <div className="flex items-center gap-2">
               {pendingOutcome.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -189,7 +189,7 @@ export default function OutrightCard({
               </div>
             </div>
             <p className="text-sm text-teal-deep/80">
-              下注 <b>🥕200</b>
+              竞猜 <b>🥕200</b>
               {pendingOutcome.odds != null && (
                 <>
                   ，猜中得{" "}
@@ -198,7 +198,7 @@ export default function OutrightCard({
               )}
               。
             </p>
-            <p className="text-xs text-teal-deep/60">下注后不可修改或撤销</p>
+            <p className="text-xs text-teal-deep/60">竞猜后不可修改或撤销</p>
             <div className="flex gap-2 mt-1">
               <button
                 disabled={busy}
@@ -230,7 +230,7 @@ export default function OutrightCard({
 
       {locked && !settled && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
-          已下注并锁定，不可修改
+          已竞猜并锁定，不可修改
         </p>
       )}
       {settled && (
