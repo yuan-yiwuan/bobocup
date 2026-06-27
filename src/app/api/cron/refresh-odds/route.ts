@@ -192,10 +192,10 @@ export async function GET(request: NextRequest) {
 
 // 类别权重（越大越易被选）；其它/未分类给低权重。
 const CATEGORY_WEIGHT: Record<string, number> = {
-  trump: 7,
+  trump: 6,
   culture: 6,
-  player_h2h: 5,
-  player_futures: 4,
+  player_h2h: 4,
+  player_futures: 3,
   tournament_futures: 3,
   team_props: 2,
   stage_elim: 1,
