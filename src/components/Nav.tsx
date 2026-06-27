@@ -39,9 +39,10 @@ export default function Nav({ nickname }: { nickname: string | null }) {
       <div className="mx-auto max-w-3xl px-3 py-3 flex items-center gap-1.5 sm:gap-2">
         <Link
           href="/matches"
-          className="font-black text-white text-lg shrink-0 whitespace-nowrap"
+          className="font-black text-white text-xl shrink-0"
+          aria-label="波波杯"
         >
-          🥕<span className="hidden sm:inline"> 波波杯</span>
+          🥕
         </Link>
         <nav className="flex gap-1 shrink min-w-0 overflow-x-auto">
           {LINKS.map((l) => {
@@ -56,8 +57,7 @@ export default function Nav({ nickname }: { nickname: string | null }) {
                     : "bg-white/90 text-teal-deep"
                 }`}
               >
-                {l.icon}
-                <span className="hidden sm:inline"> {l.label}</span>
+                {l.icon} {l.label}
               </Link>
             );
           })}
@@ -67,13 +67,17 @@ export default function Nav({ nickname }: { nickname: string | null }) {
         <div className="ml-auto relative shrink-0">
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cartoon-btn bg-white text-teal-deep pl-1 pr-1.5 py-1 flex items-center gap-0.5"
+            className="cartoon-btn bg-white text-teal-deep px-2.5 py-1.5 text-sm flex items-center gap-1 min-w-0"
             aria-label="菜单"
           >
-            <span className="w-6 h-6 rounded-full bg-teal-brand text-white flex items-center justify-center text-xs font-black uppercase">
+            {/* 默认显示全名；空间实在不够（极窄屏）才压成首字母 */}
+            <span className="hidden min-[360px]:inline truncate max-w-[4.5rem] sm:max-w-[10rem]">
+              {nickname ?? "我"}
+            </span>
+            <span className="min-[360px]:hidden font-black uppercase">
               {initial}
             </span>
-            <span className="text-xs">▾</span>
+            <span className="text-xs shrink-0">▾</span>
           </button>
 
           {menuOpen && (
