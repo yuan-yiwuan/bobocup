@@ -233,7 +233,7 @@ export default function OutrightCard({
               )}
               。
             </p>
-            <p className="text-xs text-teal-deep/60">竞猜后不可修改或撤销</p>
+            <p className="text-sm text-teal-deep/80">竞猜后不可修改或撤销</p>
             <div className="flex gap-2 mt-1">
               <button
                 disabled={busy}
