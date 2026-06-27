@@ -36,31 +36,23 @@ body {
   background: #ffffff;
 }
 
-/* 每日竞猜未投：卡片外圈一圈缓慢旋转的光晕（连续、不闪烁，卡本身不动） */
-@keyframes dailySpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* 每日竞猜未投：卡片背后一圈静止的柔和光晕（不动不闪，卡本身不动） */
 .daily-glow {
   position: relative;
 }
 .daily-glow::before {
   content: "";
   position: absolute;
-  inset: -5px;
-  border-radius: 1.5rem;
+  inset: -10px;
+  border-radius: 1.75rem;
   z-index: -1;
-  background: conic-gradient(
-    from 0deg,
-    #fde047,
-    #fb923c,
-    #f472b6,
-    #fb923c,
-    #fde047
+  background: radial-gradient(
+    ellipse at center,
+    rgba(253, 224, 71, 0.85),
+    rgba(251, 146, 60, 0.45) 55%,
+    rgba(251, 146, 60, 0) 75%
   );
-  filter: blur(3px);
-  animation: dailySpin 4s linear infinite;
+  filter: blur(10px);
 }
 
 .cartoon-btn {
