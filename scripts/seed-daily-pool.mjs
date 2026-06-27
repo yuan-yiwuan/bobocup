@@ -108,6 +108,7 @@ async function main() {
       outcome_label: "选项",
       pool: true,
       category: category(e.title || ""),
+      volume: Math.round(e.volume || 0),
     });
   }
 
