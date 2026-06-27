@@ -31,6 +31,8 @@ export default function MatchCard({
   initialPick,
   initialStake,
   showDate = false,
+  peerBets = [],
+  nameById = {},
 }: {
   match: Match;
   teams: TeamMap;
@@ -39,6 +41,10 @@ export default function MatchCard({
   initialPick: Pick | null;
   initialStake: number;
   showDate?: boolean;
+  /** 本场所有人的竞猜（「大家的竞猜」下拉） */
+  peerBets?: { user_id: string; pick: Pick }[];
+  /** user_id → 昵称 */
+  nameById?: Record<string, string>;
 }) {
   const isAdvance = match.bet_type === "advance";
   const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
@@ -51,6 +57,7 @@ export default function MatchCard({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [peersOpen, setPeersOpen] = useState(false);
 
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
@@ -248,6 +255,38 @@ export default function MatchCard({
       {err && (
         <p className="mt-2 text-xs text-red-600 font-semibold">{err}</p>
       )}
+
+      {(() => {
+        const others = peerBets.filter((b) => b.user_id !== userId);
+        if (others.length === 0) return null;
+        return (
+          <div className="mt-2 border-t-2 border-dashed border-teal-deep/20 pt-2">
+            <button
+              onClick={() => setPeersOpen((v) => !v)}
+              className="text-xs font-bold text-teal-brand"
+            >
+              👥 大家的竞猜 ({others.length}) {peersOpen ? "▴" : "▾"}
+            </button>
+            {peersOpen && (
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {others.map((b, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="font-bold text-teal-deep truncate">
+                      {nameById[b.user_id] ?? "神秘人"}
+                    </span>
+                    <span className="shrink-0 text-teal-deep/70">
+                      {pickLabel(match, b.pick, teams)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

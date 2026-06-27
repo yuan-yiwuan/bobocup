@@ -17,6 +17,7 @@ export default function BettingTabs({
   matches,
   teams,
   initialBets,
+  matchPeerBets,
   userId,
   userHomeTeamId,
   outrightMarkets,
@@ -31,6 +32,7 @@ export default function BettingTabs({
   matches: Match[];
   teams: Team[];
   initialBets: Bet[];
+  matchPeerBets: { user_id: string; match_id: string; pick: Bet["pick"] }[];
   userId: string;
   userHomeTeamId: number | null;
   outrightMarkets: OutrightMarket[];
@@ -105,6 +107,8 @@ export default function BettingTabs({
           initialBets={initialBets}
           userId={userId}
           userHomeTeamId={userHomeTeamId}
+          matchPeerBets={matchPeerBets}
+          nameById={nameById}
         />
       ) : outrightMarkets.length === 0 && !dailyMarket ? (
         <div className="cartoon-card p-8 text-center text-teal-deep font-bold">

@@ -14,12 +14,16 @@ export default function MatchesView({
   initialBets,
   userId,
   userHomeTeamId,
+  matchPeerBets = [],
+  nameById = {},
 }: {
   matches: Match[];
   teams: Team[];
   initialBets: Bet[];
   userId: string;
   userHomeTeamId: number | null;
+  matchPeerBets?: { user_id: string; match_id: string; pick: Bet["pick"] }[];
+  nameById?: Record<string, string>;
 }) {
   const mounted = useMounted();
 
@@ -33,6 +37,14 @@ export default function MatchesView({
     () => Object.fromEntries(initialBets.map((b) => [b.match_id, b])),
     [initialBets],
   );
+
+  // match_id -> 所有人的注单（「大家的竞猜」）
+  const peerByMatch = useMemo(() => {
+    const map: Record<string, { user_id: string; pick: Bet["pick"] }[]> = {};
+    for (const b of matchPeerBets)
+      (map[b.match_id] ??= []).push({ user_id: b.user_id, pick: b.pick });
+    return map;
+  }, [matchPeerBets]);
 
   // 按日期分组（按浏览器本地时区，挂载后才计算以避免 hydration 不一致）
   const groups = useMemo(() => {
@@ -207,6 +219,8 @@ export default function MatchesView({
               initialPick={bet?.pick ?? null}
               initialStake={bet?.stake ?? 100}
               showDate={filtering}
+              peerBets={peerByMatch[m.id] ?? []}
+              nameById={nameById}
             />
           );
         })}

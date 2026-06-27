@@ -39,6 +39,7 @@ export default async function MatchesPage() {
     { data: outrightBets },
     { data: dailyMarketRow },
     { data: profileRows },
+    { data: allMatchBetRows },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -60,8 +61,15 @@ export default async function MatchesPage() {
       .eq("featured_date", pacificDate())
       .maybeSingle(),
     supabase.from("profiles").select("id, nickname"),
+    // 所有人的比赛注单（用于比赛卡「大家的竞猜」）
+    supabase.from("bets").select("user_id, match_id, pick"),
   ]);
 
+  const allMatchBets = (allMatchBetRows ?? []) as {
+    user_id: string;
+    match_id: string;
+    pick: Bet["pick"];
+  }[];
   const allOutcomes = (outrightOutcomes ?? []) as OutrightOutcome[];
   const allOutrightBets = (outrightBets ?? []) as OutrightBet[];
   const nameById: Record<string, string> = Object.fromEntries(
@@ -93,6 +101,7 @@ export default async function MatchesPage() {
           matches={(matches ?? []) as Match[]}
           teams={(teams ?? []) as Team[]}
           initialBets={(bets ?? []) as Bet[]}
+          matchPeerBets={allMatchBets}
           userId={user.id}
           userHomeTeamId={profile.home_team_id ?? null}
           outrightMarkets={(outrightMarkets ?? []) as OutrightMarket[]}
