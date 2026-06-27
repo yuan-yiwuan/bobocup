@@ -40,16 +40,21 @@ export default function MatchCard({
   initialStake: number;
   showDate?: boolean;
 }) {
+  const isAdvance = match.bet_type === "advance";
+  const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
+  // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级）200。主队比赛可 1~3 倍。
+  const base = isAdvance ? 200 : 100;
+
   const [pick, setPick] = useState<Pick | null>(initialPick);
-  const [stake, setStake] = useState<number>(initialStake);
+  const [stake, setStake] = useState<number>(
+    initialPick != null ? initialStake : base,
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
-  const multiplier = Math.round(stake / 100);
-  const isAdvance = match.bet_type === "advance";
-  const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
+  const multiplier = Math.round(stake / base);
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -96,8 +101,8 @@ export default function MatchCard({
         setErr(humanizeBetError(error.message));
       }
     } else {
-      // 主队的比赛：胜/平/负切换都保留倍数；非主队比赛一律 100
-      const nextStake = htPick != null ? stake : 100;
+      // 主队的比赛：胜/平/负切换都保留倍数；非主队比赛一律 base
+      const nextStake = htPick != null ? stake : base;
       setPick(p);
       setStake(nextStake);
       const msg = await save(p, nextStake);
@@ -115,7 +120,7 @@ export default function MatchCard({
     setErr(null);
     setBusy(true);
     const prev = stake;
-    const nextStake = 100 * m;
+    const nextStake = base * m;
     setStake(nextStake);
     const msg = await save(pick, nextStake);
     if (msg) {

@@ -9,20 +9,33 @@ export default function SettingsForm({
   teams,
   initialNickname,
   initialHomeTeam,
+  homeTeamEliminated = false,
+  aliveTeamIds = [],
 }: {
   teams: Team[];
   initialNickname: string;
   initialHomeTeam: number | null;
+  homeTeamEliminated?: boolean;
+  aliveTeamIds?: number[];
 }) {
   const router = useRouter();
   const [nickname, setNickname] = useState(initialNickname);
-  const [homeTeam, setHomeTeam] = useState<number | null>(initialHomeTeam);
+  // 主队被淘汰时进入改选，默认清空让用户重选
+  const [homeTeam, setHomeTeam] = useState<number | null>(
+    homeTeamEliminated ? null : initialHomeTeam,
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // 主队一旦选定（非空）即锁定，不可更换
-  const homeTeamLocked = initialHomeTeam != null;
+  // 主队选定后锁定；仅当主队已被淘汰时可改选
+  const homeTeamLocked = initialHomeTeam != null && !homeTeamEliminated;
+  // 改选时只能选仍在比赛的球队
+  const aliveSet = new Set(aliveTeamIds);
+  const selectableTeams =
+    homeTeamEliminated && aliveSet.size > 0
+      ? teams.filter((t) => aliveSet.has(t.id))
+      : teams;
 
   const dirty =
     nickname.trim() !== initialNickname || homeTeam !== initialHomeTeam;
@@ -87,17 +100,19 @@ export default function SettingsForm({
           }}
           className="cartoon-btn bg-white px-3 py-2 font-semibold outline-none"
         >
-          <option value="">暂不选择</option>
-          {teams.map((t) => (
+          <option value="">{homeTeamEliminated ? "选择新主队" : "暂不选择"}</option>
+          {selectableTeams.map((t) => (
             <option key={t.id} value={t.id}>
               {t.flag_emoji ?? "⚽"} {t.name_zh}
             </option>
           ))}
         </select>
         <span className="text-xs text-teal-deep/50">
-          {homeTeamLocked
-            ? "小组赛期间，主队不可更换"
-            : "⚠️ 小组赛期间，一旦选定不能更换，请慎重"}
+          {homeTeamEliminated
+            ? "原主队已被淘汰，可改选一支仍在比赛的球队"
+            : homeTeamLocked
+              ? "主队已锁定，被淘汰后才能更换"
+              : "⚠️ 一旦选定，球队出局前不能更换，请慎重"}
         </span>
       </label>
 

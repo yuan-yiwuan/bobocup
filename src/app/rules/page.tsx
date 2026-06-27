@@ -27,13 +27,27 @@ export default async function RulesPage() {
 
         <div className="flex flex-col gap-4">
           <Section title="🥕 怎么玩">
-            <p>这是 2026 世界杯竞猜。每场比赛你可以三选一：</p>
+            <p>这是 2026 世界杯竞猜。</p>
             <ul className="list-disc pl-5 mt-1 space-y-0.5">
               <li>
-                <b>主胜 / 平局 / 客胜</b>，每场默认投 <b>100 根胡萝卜 🥕</b>
+                <b>小组赛</b>：猜 主胜 / 平局 / 客胜，每场 <b>100 根胡萝卜 🥕</b>
               </li>
-              <li>开赛前可以随便改、也可以取消</li>
-              <li>只能竞猜还没开赛的比赛；开赛后这场就锁定了</li>
+              <li>
+                <b>淘汰赛</b>：猜 <b>谁晋级</b>（两选一），每场 <b>200 根 🥕</b>
+              </li>
+              <li>开赛前可以随便改、也可以取消；开赛后这场就锁定了</li>
+            </ul>
+          </Section>
+
+          <Section title="🏆 特别竞猜">
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li>
+                和单场无关的长期盘：<b>金靴</b>、<b>夺冠球队</b>
+              </li>
+              <li>
+                每个一注 <b>200 根 🥕</b>，<b>一旦下注不可修改或撤销</b>
+              </li>
+              <li>一直开放到揭晓；倍数每天更新，下注那刻锁定</li>
             </ul>
           </Section>
 
@@ -53,10 +67,11 @@ export default async function RulesPage() {
             <ul className="list-disc pl-5 space-y-0.5">
               <li>在设置里选一个主队</li>
               <li>
-                只要是 <b>自己主队的比赛</b>，猜主队胜 / 平 / 负都可以投{" "}
-                <b>1~3 倍</b>（最多 300 根胡萝卜）
+                只要是 <b>自己主队的比赛</b>，任选都可投 <b>1~3 倍</b>
+                （小组赛 100~300、淘汰赛 200~600 根胡萝卜，最多 600）
               </li>
-              <li>非主队的比赛，一律 100 根</li>
+              <li>非主队的比赛，按该场基础注额（小组赛 100、淘汰赛 200）</li>
+              <li>主队一旦选定不能更换；<b>被淘汰后可改选</b>一支仍在比赛的球队</li>
             </ul>
           </Section>
 

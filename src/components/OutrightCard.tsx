@@ -11,6 +11,7 @@ import { humanizeBetError } from "@/lib/bets";
 import { formatOdds } from "@/lib/format";
 
 const TOP_N = 12;
+const OUTRIGHT_STAKE = 200;
 
 /** outright 候选项展示名：球队用中文名，球员用原名。 */
 function outcomeName(o: OutrightOutcome): string {
@@ -28,67 +29,63 @@ export default function OutrightCard({
   userBet: OutrightBet | null;
   userId: string;
 }) {
-  const [pickId, setPickId] = useState<number | null>(
+  // 已下注的选项 id（一旦下注即锁定，不可修改/撤销）
+  const [placedId, setPlacedId] = useState<number | null>(
     userBet?.outcome_id ?? null,
   );
+  // 待确认的选项（点了但还没确认）
+  const [pendingId, setPendingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
   const settled = market.settled;
   const winnerId = market.result_outcome_id;
+  const locked = placedId != null; // 已下注
 
   // 默认只展示概率最高的 TOP_N；已选中但排在外面的固定显示出来
   const visible = (() => {
     if (expanded) return outcomes;
     const top = outcomes.slice(0, TOP_N);
-    if (pickId != null && !top.some((o) => o.id === pickId)) {
-      const picked = outcomes.find((o) => o.id === pickId);
-      if (picked) return [...top, picked];
+    const keepId = placedId ?? pendingId;
+    if (keepId != null && !top.some((o) => o.id === keepId)) {
+      const kept = outcomes.find((o) => o.id === keepId);
+      if (kept) return [...top, kept];
     }
     return top;
   })();
 
-  async function onPick(o: OutrightOutcome) {
-    if (busy || settled || o.closed) return;
+  function onTap(o: OutrightOutcome) {
+    if (busy || settled || locked || o.closed) return;
     setErr(null);
-    setBusy(true);
-    const prev = pickId;
-    const supabase = createClient();
-
-    if (pickId === o.id) {
-      // 再点一次 = 撤注
-      setPickId(null);
-      const { error } = await supabase
-        .from("outright_bets")
-        .delete()
-        .eq("user_id", userId)
-        .eq("market_id", market.id);
-      if (error) {
-        setPickId(prev);
-        setErr(humanizeBetError(error.message));
-      }
-    } else {
-      setPickId(o.id);
-      const { error } = await supabase.from("outright_bets").upsert(
-        {
-          user_id: userId,
-          market_id: market.id,
-          outcome_id: o.id,
-          stake: 100,
-          odds_snapshot: o.odds,
-        },
-        { onConflict: "user_id,market_id" },
-      );
-      if (error) {
-        setPickId(prev);
-        setErr(humanizeBetError(error.message));
-      }
-    }
-    setBusy(false);
+    setPendingId((cur) => (cur === o.id ? null : o.id));
   }
 
-  const pickedOutcome = outcomes.find((o) => o.id === pickId) ?? null;
+  async function confirmBet() {
+    if (pendingId == null || busy) return;
+    const o = outcomes.find((x) => x.id === pendingId);
+    if (!o) return;
+    setBusy(true);
+    setErr(null);
+    const supabase = createClient();
+    const { error } = await supabase.from("outright_bets").insert({
+      user_id: userId,
+      market_id: market.id,
+      outcome_id: o.id,
+      stake: OUTRIGHT_STAKE,
+      odds_snapshot: o.odds,
+    });
+    setBusy(false);
+    if (error) {
+      setErr(humanizeBetError(error.message));
+      return;
+    }
+    setPlacedId(o.id);
+    setPendingId(null);
+  }
+
+  const placedOutcome = outcomes.find((o) => o.id === placedId) ?? null;
+  const pendingOutcome = outcomes.find((o) => o.id === pendingId) ?? null;
 
   return (
     <div className="cartoon-card p-4">
@@ -103,31 +100,34 @@ export default function OutrightCard({
         )}
       </div>
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-3">
-        <span>每人一注 · 🥕100 · 选一个{market.outcome_label}</span>
-        {pickedOutcome && (
+        <span>每人一注 · 🥕200 · 一旦下注不可修改</span>
+        {placedOutcome && (
           <span className="text-teal-deep">
-            已投 {outcomeName(pickedOutcome)}
-            {pickedOutcome.odds != null && ` ×${formatOdds(pickedOutcome.odds)}`}
+            已投 {outcomeName(placedOutcome)}
+            {placedOutcome.odds != null && ` ×${formatOdds(placedOutcome.odds)}`}
           </span>
         )}
       </div>
 
       <div className="flex flex-col gap-1.5">
         {visible.map((o) => {
-          const selected = pickId === o.id;
+          const isPlaced = placedId === o.id;
+          const isPending = pendingId === o.id;
           const isWinner = settled && winnerId === o.id;
-          const disabled = busy || settled || o.closed;
+          const disabled = busy || settled || locked || o.closed;
           return (
             <button
               key={o.id}
               disabled={disabled}
-              onClick={() => onPick(o)}
+              onClick={() => onTap(o)}
               className={`flex items-center gap-2 px-2 py-1.5 rounded-xl border-2 border-[#0f3d3e] text-left transition ${
                 isWinner
                   ? "bg-emerald-400 text-teal-deep"
-                  : selected
+                  : isPlaced
                     ? "bg-yellow-300 text-teal-deep"
-                    : "bg-white text-teal-deep"
+                    : isPending
+                      ? "bg-yellow-200 text-teal-deep"
+                      : "bg-white text-teal-deep"
               } ${o.closed && !isWinner ? "opacity-40" : ""} ${
                 disabled ? "cursor-default" : "cursor-pointer"
               }`}
@@ -158,6 +158,37 @@ export default function OutrightCard({
         })}
       </div>
 
+      {/* 下注前确认条 */}
+      {!locked && !settled && pendingOutcome && (
+        <div className="mt-3 cartoon-card bg-yellow-50 p-3 flex flex-col gap-2">
+          <p className="text-sm font-bold text-teal-deep">
+            确认猜「{outcomeName(pendingOutcome)}」？
+          </p>
+          <p className="text-xs text-teal-deep/70">
+            下注 🥕200
+            {pendingOutcome.odds != null &&
+              `，猜中得 🥕${Math.round(OUTRIGHT_STAKE * pendingOutcome.odds)}`}
+            。<span className="font-bold">一旦确认不可修改或撤销。</span>
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={busy}
+              onClick={confirmBet}
+              className="cartoon-btn flex-1 bg-yellow-300 text-teal-deep px-3 py-2 text-sm font-bold"
+            >
+              {busy ? "提交中…" : "确认下注"}
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => setPendingId(null)}
+              className="cartoon-btn flex-1 bg-white text-teal-deep px-3 py-2 text-sm font-bold"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
       {outcomes.length > TOP_N && (
         <button
           onClick={() => setExpanded((v) => !v)}
@@ -167,9 +198,14 @@ export default function OutrightCard({
         </button>
       )}
 
+      {locked && !settled && (
+        <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
+          已下注并锁定，不可修改
+        </p>
+      )}
       {settled && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
-          已揭晓，无法修改
+          已揭晓
         </p>
       )}
       {err && <p className="mt-2 text-xs text-red-600 font-semibold">{err}</p>}
