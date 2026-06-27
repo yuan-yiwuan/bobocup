@@ -138,11 +138,16 @@ export default function MatchCard({
   }
 
   return (
-    <div className="cartoon-card p-4">
+    <div className={`cartoon-card p-4 ${started ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-2">
         <span>
           {showDate && `${matchDateKey(match.commence_time)} · `}
           🕐 {matchTime(match.commence_time)}
+          {started && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-gray-300 text-teal-deep">
+              ⏳ 进行中
+            </span>
+          )}
         </span>
         {pick && (
           <span className="text-teal-deep">
@@ -249,7 +254,7 @@ export default function MatchCard({
 
       {started && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
-          已开赛，无法修改
+          ⏳ 进行中，待结算
         </p>
       )}
       {err && (
@@ -265,7 +270,7 @@ export default function MatchCard({
               onClick={() => setPeersOpen((v) => !v)}
               className="text-xs font-bold text-teal-brand"
             >
-              👥 大家的竞猜 ({others.length}) {peersOpen ? "▴" : "▾"}
+              🐰 大家的竞猜 ({others.length}) {peersOpen ? "▴" : "▾"}
             </button>
             {peersOpen && (
               <ul className="mt-1.5 flex flex-col gap-1">
