@@ -198,16 +198,14 @@ export default function OutrightCard({
               )}
               。
             </p>
-            <p className="text-sm font-bold text-red-600">
-              ⚠️ 一旦确认，不可修改或撤销！
-            </p>
+            <p className="text-xs text-teal-deep/60">下注后不可修改或撤销</p>
             <div className="flex gap-2 mt-1">
               <button
                 disabled={busy}
                 onClick={confirmBet}
                 className="cartoon-btn flex-1 bg-yellow-300 text-teal-deep px-3 py-3 font-bold"
               >
-                {busy ? "提交中…" : "确认下注"}
+                {busy ? "提交中…" : "确定"}
               </button>
               <button
                 disabled={busy}
