@@ -2,18 +2,28 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  { href: "/matches", label: "竞猜", icon: "⚽" },
+  { href: "/matches", label: "比赛", icon: "⚽" },
+  { href: "/matches?tab=special", label: "特别竞猜", icon: "✨" },
   { href: "/leaderboard", label: "排行榜", icon: "🏆" },
 ];
 
 export default function Nav({ nickname }: { nickname: string | null }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const onSpecial =
+    pathname === "/matches" && searchParams.get("tab") === "special";
+  function isActive(href: string): boolean {
+    if (href === "/matches?tab=special") return onSpecial;
+    if (href === "/matches") return pathname === "/matches" && !onSpecial;
+    return pathname.startsWith(href);
+  }
 
   async function signOut() {
     const supabase = createClient();
@@ -22,47 +32,52 @@ export default function Nav({ nickname }: { nickname: string | null }) {
     router.refresh();
   }
 
+  const initial = nickname?.trim()?.[0] ?? "🥕";
+
   return (
     <header className="sticky top-0 z-20 bg-teal-deep/95 backdrop-blur border-b-4 border-[#0f3d3e]">
-      <div className="mx-auto max-w-3xl px-4 py-3 flex items-center gap-2 sm:gap-3">
+      <div className="mx-auto max-w-3xl px-3 py-3 flex items-center gap-1.5 sm:gap-2">
         <Link
           href="/matches"
           className="font-black text-white text-lg shrink-0 whitespace-nowrap"
         >
           🥕<span className="hidden sm:inline"> 波波杯</span>
         </Link>
-        <nav className="flex gap-1.5 shrink-0">
+        <nav className="flex gap-1 shrink min-w-0 overflow-x-auto">
           {LINKS.map((l) => {
-            const active = pathname.startsWith(l.href);
+            const active = isActive(l.href);
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`px-2.5 py-1.5 rounded-full text-sm font-bold border-2 border-[#0f3d3e] whitespace-nowrap shrink-0 ${
+                className={`px-2 py-1.5 rounded-full text-sm font-bold border-2 border-[#0f3d3e] whitespace-nowrap shrink-0 ${
                   active
                     ? "bg-yellow-300 text-[#0f3d3e]"
                     : "bg-white/90 text-teal-deep"
                 }`}
               >
-                {l.icon} {l.label}
+                {l.icon}
+                <span className="hidden sm:inline"> {l.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* 右侧：昵称 + 下拉（设置/规则/退出） */}
+        {/* 右侧：头像下拉（我的竞猜/大名单/设置/规则/退出） */}
         <div className="ml-auto relative shrink-0">
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cartoon-btn bg-white text-teal-deep px-3 py-1.5 text-sm flex items-center gap-1 max-w-[10rem]"
+            className="cartoon-btn bg-white text-teal-deep pl-1 pr-1.5 py-1 flex items-center gap-0.5"
+            aria-label="菜单"
           >
-            <span className="truncate">{nickname ?? "我"}</span>
-            <span className="text-xs shrink-0">▾</span>
+            <span className="w-6 h-6 rounded-full bg-teal-brand text-white flex items-center justify-center text-xs font-black uppercase">
+              {initial}
+            </span>
+            <span className="text-xs">▾</span>
           </button>
 
           {menuOpen && (
             <>
-              {/* 点击空白关闭 */}
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setMenuOpen(false)}

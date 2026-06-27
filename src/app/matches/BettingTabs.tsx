@@ -69,14 +69,6 @@ export default function BettingTabs({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function setTab(next: "matches" | "special") {
-    const params = new URLSearchParams(searchParams.toString());
-    if (next === "special") params.set("tab", "special");
-    else params.delete("tab");
-    const q = params.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
-  }
-
   // market_id -> 候选项（已按 sort_order 排序）
   const outcomesByMarket = useMemo(() => {
     const map = new Map<string, OutrightOutcome[]>();
@@ -106,30 +98,6 @@ export default function BettingTabs({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 顶部 tab */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setTab("matches")}
-          className={`cartoon-btn flex-1 px-3 py-2 text-sm font-bold ${
-            tab === "matches"
-              ? "bg-teal-brand text-white"
-              : "bg-white text-teal-deep"
-          }`}
-        >
-          ⚽ 比赛竞猜
-        </button>
-        <button
-          onClick={() => setTab("special")}
-          className={`cartoon-btn flex-1 px-3 py-2 text-sm font-bold ${
-            tab === "special"
-              ? "bg-teal-brand text-white"
-              : "bg-white text-teal-deep"
-          }`}
-        >
-          ✨ 特别竞猜
-        </button>
-      </div>
-
       {tab === "matches" ? (
         <MatchesView
           matches={matches}
