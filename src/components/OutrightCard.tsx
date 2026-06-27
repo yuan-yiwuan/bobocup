@@ -155,7 +155,7 @@ export default function OutrightCard({
   const pendingOutcome = outcomes.find((o) => o.id === pendingId) ?? null;
 
   return (
-    <div className={`cartoon-card p-4 ${highlight ? "daily-glow" : ""}`}>
+    <div className="cartoon-card p-4">
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-black text-teal-deep text-lg">
           {titleEmoji} {market.title}
