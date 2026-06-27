@@ -190,15 +190,42 @@ export async function GET(request: NextRequest) {
 
 // ── 每日竞猜：刷新/结算已选题 + 挑选今天的 ───────────────────────
 
-const CATEGORY_PRIORITY: Record<string, number> = {
-  trump: 0,
-  culture: 1,
-  player_h2h: 2,
-  player_futures: 3,
-  tournament_futures: 4,
-  team_props: 5,
-  stage_elim: 6,
+// 类别权重（越大越易被选）；其它/未分类给低权重。
+const CATEGORY_WEIGHT: Record<string, number> = {
+  trump: 7,
+  culture: 6,
+  player_h2h: 5,
+  player_futures: 4,
+  tournament_futures: 3,
+  team_props: 2,
+  stage_elim: 1,
 };
+
+/** 单题权重 = 类别权重 × 热度权重（热度用 log 压缩成交量量级差）。 */
+function poolWeight(category: string | null, volume: number): number {
+  const cat = CATEGORY_WEIGHT[category ?? ""] ?? 0.5;
+  const pop = Math.log10((volume || 0) + 10); // ~1（$0）到 ~7（$1000万）
+  return cat * pop;
+}
+
+/**
+ * 加权随机排序（Efraimidis–Spirakis）：key = u^(1/weight)，按 key 降序。
+ * 权重高的更可能排前，但保留随机性，每天结果不同。
+ */
+function weightedOrder<T extends { category: string | null; volume: number }>(
+  rows: T[],
+): T[] {
+  return rows
+    .map((r) => ({
+      r,
+      key: Math.pow(
+        Math.random(),
+        1 / Math.max(poolWeight(r.category, r.volume), 1e-6),
+      ),
+    }))
+    .sort((a, b) => b.key - a.key)
+    .map((x) => x.r);
+}
 
 /** 把一个每日盘的选项写库（概率/倍数/是否出局），Yes/No 映射成是/否。 */
 async function upsertDailyOutcomes(
@@ -303,19 +330,21 @@ async function refreshDaily(supabase: ReturnType<typeof createAdminClient>) {
     return summary;
   }
 
-  // 3) 从池子挑一个：按类别优先级，过滤掉已结束 / 有选项 >80%
+  // 3) 从池子挑一个：类别×热度加权随机排序，过滤掉已结束 / 有选项 >80%
   const { data: poolRows } = await supabase
     .from("outright_markets")
-    .select("id, category")
+    .select("id, category, volume")
     .eq("kind", "daily")
     .eq("pool", true)
     .eq("closed", false)
     .is("featured_date", null)
     .eq("settled", false);
-  const sorted = (poolRows ?? []).sort(
-    (a, b) =>
-      (CATEGORY_PRIORITY[a.category as string] ?? 9) -
-      (CATEGORY_PRIORITY[b.category as string] ?? 9),
+  const sorted = weightedOrder(
+    (poolRows ?? []).map((r) => ({
+      id: r.id as string,
+      category: r.category as string | null,
+      volume: Number(r.volume ?? 0),
+    })),
   );
 
   let tries = 0;
