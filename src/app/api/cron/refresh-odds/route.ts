@@ -197,7 +197,7 @@ const CATEGORY_WEIGHT: Record<string, number> = {
   player_h2h: 4,
   player_futures: 3,
   tournament_futures: 3,
-  team_props: 2,
+  team_props: 1,
   stage_elim: 1,
 };
 
