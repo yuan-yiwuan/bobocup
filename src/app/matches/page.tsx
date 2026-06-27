@@ -71,6 +71,12 @@ export default async function MatchesPage() {
     ? allOutrightBets.find((b) => b.market_id === dailyMarket.id) ?? null
     : null;
 
+  // 每日竞猜换题时刻 = 下一个太平洋午夜（夏令时 PDT = UTC-7，赛事期内恒为夏令时）
+  const [y, mo, d] = pacificDate().split("-").map(Number);
+  const dailyDeadline = new Date(
+    Date.UTC(y, mo - 1, d + 1, 7, 0, 0),
+  ).toISOString();
+
   return (
     <>
       <Nav nickname={profile.nickname} />
@@ -87,6 +93,7 @@ export default async function MatchesPage() {
           dailyMarket={dailyMarket}
           dailyOutcomes={dailyOutcomes}
           dailyBet={dailyBet}
+          dailyDeadline={dailyDeadline}
         />
       </main>
     </>
