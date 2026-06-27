@@ -36,23 +36,12 @@ body {
   background: #ffffff;
 }
 
-/* 每日竞猜未投：卡片背后一圈静止的柔和光晕（不动不闪，卡本身不动） */
+/* 每日竞猜未投：卡片一圈静止的暖色柔光（保留卡通硬阴影 + 叠一层散光，不动不闪） */
 .daily-glow {
-  position: relative;
-}
-.daily-glow::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 1.75rem;
-  z-index: -1;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(253, 224, 71, 0.85),
-    rgba(251, 146, 60, 0.45) 55%,
-    rgba(251, 146, 60, 0) 75%
-  );
-  filter: blur(10px);
+  box-shadow:
+    4px 5px 0 0 rgba(15, 61, 62, 0.85),
+    0 0 22px 6px rgba(253, 224, 71, 0.85),
+    0 0 40px 12px rgba(251, 146, 60, 0.45);
 }
 
 .cartoon-btn {
