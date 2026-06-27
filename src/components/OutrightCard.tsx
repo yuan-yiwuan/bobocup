@@ -10,7 +10,7 @@ import type {
 import { humanizeBetError } from "@/lib/bets";
 import { formatOdds } from "@/lib/format";
 
-const TOP_N = 12;
+const TOP_N = 5;
 const OUTRIGHT_STAKE = 200;
 
 /** outright 候选项展示名：球队用中文名，球员用原名。 */
