@@ -4,10 +4,13 @@ import { getKnockoutFixtures, type KnockoutFixture } from "@/lib/openfootball";
 import {
   getAdvanceProb,
   getOutrightMarket,
+  getDailyMarket,
   OUTRIGHT_SLUGS,
+  type DailyMarket,
 } from "@/lib/polymarketApi";
 import { isAuthorizedCron } from "@/lib/cron";
 import { teamKey } from "@/lib/teamNames";
+import { pacificDate } from "@/lib/leaderboard";
 import { STAKE } from "@/lib/types";
 
 type TeamInfo = { id: number; nameEn: string; nameZh: string };
@@ -167,6 +170,13 @@ export async function GET(request: NextRequest) {
     outright = { error: String(e instanceof Error ? e.message : e) };
   }
 
+  let daily: unknown = null;
+  try {
+    daily = await refreshDaily(supabase);
+  } catch (e) {
+    daily = { error: String(e instanceof Error ? e.message : e) };
+  }
+
   return NextResponse.json({
     ok: true,
     fixtures: fixtures.length,
@@ -174,7 +184,168 @@ export async function GET(request: NextRequest) {
     skippedNoProb,
     skippedUnknownTeam,
     outright,
+    daily,
   });
+}
+
+// ── 每日竞猜：刷新/结算已选题 + 挑选今天的 ───────────────────────
+
+const CATEGORY_PRIORITY: Record<string, number> = {
+  trump: 0,
+  culture: 1,
+  player_h2h: 2,
+  player_futures: 3,
+  tournament_futures: 4,
+  team_props: 5,
+  stage_elim: 6,
+};
+
+/** 把一个每日盘的选项写库（概率/倍数/是否出局），Yes/No 映射成是/否。 */
+async function upsertDailyOutcomes(
+  supabase: ReturnType<typeof createAdminClient>,
+  marketId: string,
+  live: DailyMarket,
+) {
+  const now = new Date().toISOString();
+  const rows = live.outcomes.map((o, i) => {
+    const lower = o.name.toLowerCase();
+    return {
+      market_id: marketId,
+      name: o.name,
+      name_zh: lower === "yes" ? "是" : lower === "no" ? "否" : null,
+      prob: o.prob,
+      odds: o.prob > 0 ? Math.round((1 / o.prob) * 100) / 100 : null,
+      image_url: o.image,
+      sort_order: i,
+      closed: o.closed,
+      updated_at: now,
+    };
+  });
+  if (rows.length > 0) {
+    await supabase
+      .from("outright_outcomes")
+      .upsert(rows, { onConflict: "market_id,name" });
+  }
+}
+
+/** 揭晓后结算某每日盘的注单。 */
+async function settleDaily(
+  supabase: ReturnType<typeof createAdminClient>,
+  marketId: string,
+  winnerName: string,
+) {
+  const { data: win } = await supabase
+    .from("outright_outcomes")
+    .select("id")
+    .eq("market_id", marketId)
+    .eq("name", winnerName)
+    .maybeSingle();
+  if (!win) return 0;
+  const winnerId = win.id as number;
+  const { data: bets } = await supabase
+    .from("outright_bets")
+    .select("id, outcome_id, stake, odds_snapshot")
+    .eq("market_id", marketId)
+    .eq("status", "pending");
+  let n = 0;
+  for (const bet of bets ?? []) {
+    const won = bet.outcome_id === winnerId;
+    const payout = won ? Math.round((bet.stake ?? STAKE) * (bet.odds_snapshot ?? 1)) : 0;
+    await supabase
+      .from("outright_bets")
+      .update({ status: won ? "won" : "lost", payout })
+      .eq("id", bet.id);
+    n++;
+  }
+  await supabase
+    .from("outright_markets")
+    .update({
+      settled: true,
+      result_outcome_id: winnerId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", marketId);
+  return n;
+}
+
+async function refreshDaily(supabase: ReturnType<typeof createAdminClient>) {
+  const today = pacificDate();
+  const summary: Record<string, unknown> = {};
+
+  // 1) 刷新 + 结算「已 featured 且未结算」的每日题
+  const { data: featured } = await supabase
+    .from("outright_markets")
+    .select("id")
+    .eq("kind", "daily")
+    .not("featured_date", "is", null)
+    .eq("settled", false);
+  for (const m of featured ?? []) {
+    try {
+      const live = await getDailyMarket(m.id as string);
+      await upsertDailyOutcomes(supabase, m.id as string, live);
+      if (live.resolved && live.winnerName) {
+        await settleDaily(supabase, m.id as string, live.winnerName);
+      }
+    } catch {
+      /* 单题失败不影响其它 */
+    }
+  }
+
+  // 2) 今天已选则跳过
+  const { data: todays } = await supabase
+    .from("outright_markets")
+    .select("id")
+    .eq("kind", "daily")
+    .eq("featured_date", today)
+    .limit(1);
+  if ((todays?.length ?? 0) > 0) {
+    summary.featured = todays![0].id;
+    return summary;
+  }
+
+  // 3) 从池子挑一个：按类别优先级，过滤掉已结束 / 有选项 >80%
+  const { data: poolRows } = await supabase
+    .from("outright_markets")
+    .select("id, category")
+    .eq("kind", "daily")
+    .eq("pool", true)
+    .eq("closed", false)
+    .is("featured_date", null)
+    .eq("settled", false);
+  const sorted = (poolRows ?? []).sort(
+    (a, b) =>
+      (CATEGORY_PRIORITY[a.category as string] ?? 9) -
+      (CATEGORY_PRIORITY[b.category as string] ?? 9),
+  );
+
+  let tries = 0;
+  for (const row of sorted) {
+    if (tries >= 30) break;
+    tries++;
+    let live: DailyMarket;
+    try {
+      live = await getDailyMarket(row.id as string);
+    } catch {
+      continue;
+    }
+    if (live.resolved || live.closed || live.outcomes.length === 0) {
+      await supabase
+        .from("outright_markets")
+        .update({ closed: true })
+        .eq("id", row.id as string);
+      continue;
+    }
+    if (live.maxProb > 0.8) continue; // 今天太一边倒，留着以后
+    await upsertDailyOutcomes(supabase, row.id as string, live);
+    await supabase
+      .from("outright_markets")
+      .update({ featured_date: today, title: live.title })
+      .eq("id", row.id as string);
+    summary.picked = row.id;
+    return summary;
+  }
+  summary.picked = null;
+  return summary;
 }
 
 /**
