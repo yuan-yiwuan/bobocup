@@ -25,6 +25,7 @@ export default function BettingTabs({
   dailyMarket,
   dailyOutcomes,
   dailyBet,
+  dailyDeadline,
 }: {
   matches: Match[];
   teams: Team[];
@@ -37,11 +38,22 @@ export default function BettingTabs({
   dailyMarket: OutrightMarket | null;
   dailyOutcomes: OutrightOutcome[];
   dailyBet: OutrightBet | null;
+  dailyDeadline: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") === "special" ? "special" : "matches";
+  // 每日竞猜还没投 → 默认落到「特别竞猜」tab（登录后引导去猜）
+  const dailyUnbet = !!dailyMarket && !dailyBet;
+  const tabParam = searchParams.get("tab");
+  const tab =
+    tabParam === "special"
+      ? "special"
+      : tabParam === "matches"
+        ? "matches"
+        : dailyUnbet
+          ? "special"
+          : "matches";
 
   function setTab(next: "matches" | "special") {
     const params = new URLSearchParams(searchParams.toString());
@@ -124,6 +136,8 @@ export default function BettingTabs({
                 userId={userId}
                 stake={100}
                 daily
+                highlight={dailyUnbet}
+                deadline={dailyDeadline}
               />
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type {
   OutrightBet,
@@ -24,6 +24,8 @@ export default function OutrightCard({
   userId,
   stake = 200,
   daily = false,
+  highlight = false,
+  deadline = null,
 }: {
   market: OutrightMarket;
   outcomes: OutrightOutcome[];
@@ -33,6 +35,10 @@ export default function OutrightCard({
   stake?: number;
   /** 每日竞猜：下注走服务端实时校验接口 */
   daily?: boolean;
+  /** 高亮 + 特效（每日竞猜未投时） */
+  highlight?: boolean;
+  /** 倒计时目标（ISO），每日竞猜未投时显示 */
+  deadline?: string | null;
 }) {
   // 已下注的选项 id（一旦下注即锁定，不可修改/撤销）
   const [placedId, setPlacedId] = useState<number | null>(
@@ -43,10 +49,41 @@ export default function OutrightCard({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  // 已投过的卡片默认折叠（反正不能改）
+  const [collapsed, setCollapsed] = useState<boolean>(userBet != null);
 
   const settled = market.settled;
   const winnerId = market.result_outcome_id;
   const locked = placedId != null; // 已下注
+
+  const titleEmoji =
+    market.kind === "golden_boot" ? "👟" : market.kind === "daily" ? "🎲" : "🏆";
+
+  // 已投 + 折叠：显示精简卡，点开可看完整（只读）
+  if (locked && collapsed) {
+    const picked = outcomes.find((o) => o.id === placedId);
+    const won = settled && winnerId === placedId;
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className="cartoon-card p-3 flex items-center gap-2 text-left w-full"
+      >
+        <span className="shrink-0 text-xs font-bold px-2 py-1 rounded-full border-2 border-[#0f3d3e] bg-emerald-500 text-white">
+          {settled ? (won ? "猜中" : "已揭晓") : "已猜"}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-teal-deep truncate text-sm">
+            {titleEmoji} {market.title}
+          </div>
+          <div className="text-xs text-teal-deep/60 truncate">
+            猜 {picked ? outcomeName(picked) : "—"} · 🥕{stake}
+            {picked?.odds != null && ` ×${formatOdds(picked.odds)}`}
+          </div>
+        </div>
+        <span className="shrink-0 text-teal-deep/40 text-xs">展开 ▾</span>
+      </button>
+    );
+  }
 
   // 默认只展示概率最高的 TOP_N；已选中但排在外面的固定显示出来
   const visible = (() => {
@@ -118,22 +155,41 @@ export default function OutrightCard({
   const pendingOutcome = outcomes.find((o) => o.id === pendingId) ?? null;
 
   return (
-    <div className="cartoon-card p-4">
+    <div
+      className={`cartoon-card p-4 ${
+        highlight
+          ? "ring-4 ring-yellow-300 ring-offset-2 animate-[pulse_2.5s_ease-in-out_infinite] bg-gradient-to-br from-yellow-50 to-white"
+          : ""
+      }`}
+    >
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-black text-teal-deep text-lg">
-          {market.kind === "golden_boot"
-            ? "👟"
-            : market.kind === "daily"
-              ? "🎲"
-              : "🏆"}{" "}
+          <span className={highlight ? "inline-block animate-bounce" : ""}>
+            {titleEmoji}
+          </span>{" "}
           {market.title}
         </h3>
-        {settled && (
+        {settled ? (
           <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-1 rounded-full border-2 border-[#0f3d3e]">
             已揭晓
           </span>
+        ) : (
+          locked && (
+            <button
+              onClick={() => setCollapsed(true)}
+              className="text-xs font-bold text-teal-deep/40"
+            >
+              收起 ▴
+            </button>
+          )
         )}
       </div>
+
+      {highlight && deadline && (
+        <div className="mb-2 text-sm font-black text-teal-brand">
+          ✨ 还没猜！<Countdown deadline={deadline} /> 后换新题
+        </div>
+      )}
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-3">
         <span>每人一注 · 🥕{stake} · 一旦竞猜不可修改</span>
         {placedOutcome && (
@@ -275,5 +331,24 @@ export default function OutrightCard({
       )}
       {err && <p className="mt-2 text-xs text-red-600 font-semibold">{err}</p>}
     </div>
+  );
+}
+
+/** 到 deadline 的倒计时（HH:MM:SS），每秒刷新。 */
+function Countdown({ deadline }: { deadline: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const ms = Math.max(0, new Date(deadline).getTime() - now);
+  const s = Math.floor(ms / 1000);
+  const hh = String(Math.floor(s / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return (
+    <span className="tabular-nums">
+      {hh}:{mm}:{ss}
+    </span>
   );
 }
