@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Bet, LeaderboardRow, Match, Team } from "@/lib/types";
+import type {
+  Bet,
+  LeaderboardRow,
+  Match,
+  OutrightBet,
+  OutrightMarket,
+  OutrightOutcome,
+  Team,
+} from "@/lib/types";
 import {
   formatLossRate,
   formatOdds,
@@ -26,6 +34,9 @@ export default function LeaderboardView({
   teams,
   currentUserId,
   prevRanks,
+  outrightBets,
+  outrightMarkets,
+  outrightOutcomes,
 }: {
   rows: LeaderboardRow[];
   bets: Bet[];
@@ -33,6 +44,9 @@ export default function LeaderboardView({
   teams: Team[];
   currentUserId: string;
   prevRanks: { milk: Record<string, number>; profit: Record<string, number> };
+  outrightBets: OutrightBet[];
+  outrightMarkets: OutrightMarket[];
+  outrightOutcomes: OutrightOutcome[];
 }) {
   const teamMap: TeamMap = useMemo(
     () => Object.fromEntries(teams.map((t) => [t.id, t])),
@@ -50,6 +64,25 @@ export default function LeaderboardView({
     }
     return map;
   }, [bets]);
+
+  // 特别竞猜：按用户分组 + 盘标题 / 选项名 映射
+  const outrightByUser = useMemo(() => {
+    const map = new Map<string, OutrightBet[]>();
+    for (const b of outrightBets) {
+      if (!map.has(b.user_id)) map.set(b.user_id, []);
+      map.get(b.user_id)!.push(b);
+    }
+    return map;
+  }, [outrightBets]);
+  const marketTitle = useMemo(
+    () => new Map(outrightMarkets.map((m) => [m.id, m.title])),
+    [outrightMarkets],
+  );
+  const outcomeNameById = useMemo(
+    () =>
+      new Map(outrightOutcomes.map((o) => [o.id, o.name_zh ?? o.name])),
+    [outrightOutcomes],
+  );
 
   const [tab, setTab] = useState<Tab>("profit");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -186,6 +219,7 @@ export default function LeaderboardView({
             matchMap[b.match_id]?.commence_time ?? "",
           ),
         );
+        const userOutright = outrightByUser.get(row.id) ?? [];
         const metric = tab === "milk" ? lossRate : profit;
         const isKing = i === 0 && metric != null;
 
@@ -233,11 +267,12 @@ export default function LeaderboardView({
 
             {isOpen && (
               <div className="border-t-2 border-dashed border-teal-deep/30 px-4 py-3 bg-teal-50/50">
-                {userBets.length === 0 ? (
+                {userBets.length === 0 && userOutright.length === 0 && (
                   <p className="text-sm text-teal-deep/60 font-semibold py-2">
                     还没有竞猜记录
                   </p>
-                ) : (
+                )}
+                {userBets.length > 0 && (
                   <ul className="flex flex-col gap-2">
                     {userBets.map((b) => {
                       const m = matchMap[b.match_id];
@@ -279,6 +314,57 @@ export default function LeaderboardView({
                         </li>
                       );
                     })}
+                  </ul>
+                )}
+
+                {userOutright.length > 0 && (
+                  <ul className="flex flex-col gap-2 mt-2">
+                    {userOutright.map((b) => (
+                      <li
+                        key={b.id}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <span
+                          className={`shrink-0 text-xs font-bold px-2 py-1 rounded-full border-2 border-[#0f3d3e] ${
+                            b.status === "won"
+                              ? "bg-emerald-500 text-white"
+                              : b.status === "lost"
+                                ? "bg-red-400 text-white"
+                                : "bg-gray-300 text-teal-deep"
+                          }`}
+                        >
+                          {b.status === "won"
+                            ? "猜中"
+                            : b.status === "lost"
+                              ? "毒奶"
+                              : "✨"}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-teal-deep truncate">
+                            {marketTitle.get(b.market_id) ?? "特别竞猜"}
+                          </div>
+                          <div className="text-xs text-teal-deep/60 truncate">
+                            猜 {outcomeNameById.get(b.outcome_id) ?? "—"} · 🥕
+                            {b.stake}
+                          </div>
+                        </div>
+                        {b.status === "won" && b.payout != null && (
+                          <span className="text-xs font-bold text-emerald-600 shrink-0">
+                            +🥕{b.payout - b.stake}
+                          </span>
+                        )}
+                        {b.status === "lost" && (
+                          <span className="text-xs font-bold text-red-500 shrink-0">
+                            −🥕{b.stake}
+                          </span>
+                        )}
+                        {b.status === "pending" && b.odds_snapshot != null && (
+                          <span className="text-xs font-bold text-teal-deep/70 shrink-0">
+                            ×{formatOdds(b.odds_snapshot)}
+                          </span>
+                        )}
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>

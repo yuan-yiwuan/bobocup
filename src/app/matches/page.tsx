@@ -38,6 +38,7 @@ export default async function MatchesPage() {
     { data: outrightOutcomes },
     { data: outrightBets },
     { data: dailyMarketRow },
+    { data: profileRows },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -49,7 +50,8 @@ export default async function MatchesPage() {
     // 长期盘（金靴/夺冠），不含每日
     supabase.from("outright_markets").select("*").neq("kind", "daily").order("kind"),
     supabase.from("outright_outcomes").select("*"),
-    supabase.from("outright_bets").select("*").eq("user_id", user.id),
+    // 所有人的特别竞猜注单（用于「大家的竞猜」）
+    supabase.from("outright_bets").select("*"),
     // 今日的每日竞猜
     supabase
       .from("outright_markets")
@@ -57,10 +59,14 @@ export default async function MatchesPage() {
       .eq("kind", "daily")
       .eq("featured_date", pacificDate())
       .maybeSingle(),
+    supabase.from("profiles").select("id, nickname"),
   ]);
 
   const allOutcomes = (outrightOutcomes ?? []) as OutrightOutcome[];
   const allOutrightBets = (outrightBets ?? []) as OutrightBet[];
+  const nameById: Record<string, string> = Object.fromEntries(
+    (profileRows ?? []).map((p) => [p.id as string, (p.nickname as string) ?? "神秘人"]),
+  );
   const dailyMarket = (dailyMarketRow ?? null) as OutrightMarket | null;
   const dailyOutcomes = dailyMarket
     ? allOutcomes
@@ -68,7 +74,9 @@ export default async function MatchesPage() {
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     : [];
   const dailyBet = dailyMarket
-    ? allOutrightBets.find((b) => b.market_id === dailyMarket.id) ?? null
+    ? allOutrightBets.find(
+        (b) => b.market_id === dailyMarket.id && b.user_id === user.id,
+      ) ?? null
     : null;
 
   // 每日竞猜换题时刻 = 下一个太平洋午夜（夏令时 PDT = UTC-7，赛事期内恒为夏令时）
@@ -90,6 +98,7 @@ export default async function MatchesPage() {
           outrightMarkets={(outrightMarkets ?? []) as OutrightMarket[]}
           outrightOutcomes={allOutcomes}
           outrightBets={allOutrightBets}
+          nameById={nameById}
           dailyMarket={dailyMarket}
           dailyOutcomes={dailyOutcomes}
           dailyBet={dailyBet}

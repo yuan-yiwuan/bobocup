@@ -1,7 +1,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Nav from "@/components/Nav";
-import type { Bet, LeaderboardRow, Match, Team } from "@/lib/types";
+import type {
+  Bet,
+  LeaderboardRow,
+  Match,
+  OutrightBet,
+  OutrightMarket,
+  OutrightOutcome,
+  Team,
+} from "@/lib/types";
 import { getLastSettleRun } from "@/lib/meta";
 import SettleRunNote from "@/components/SettleRunNote";
 import LeaderboardView from "./LeaderboardView";
@@ -22,16 +30,26 @@ export default async function LeaderboardPage() {
     .maybeSingle();
   if (!profile?.nickname) redirect("/onboarding");
 
-  const [{ data: rows }, { data: bets }, { data: matches }, { data: teams }] =
-    await Promise.all([
-      supabase
-        .from("leaderboard")
-        .select("*")
-        .order("milk_index", { ascending: false, nullsFirst: false }),
-      supabase.from("bets").select("*"),
-      supabase.from("matches").select("*"),
-      supabase.from("teams").select("*"),
-    ]);
+  const [
+    { data: rows },
+    { data: bets },
+    { data: matches },
+    { data: teams },
+    { data: outrightBets },
+    { data: outrightMarkets },
+    { data: outrightOutcomes },
+  ] = await Promise.all([
+    supabase
+      .from("leaderboard")
+      .select("*")
+      .order("milk_index", { ascending: false, nullsFirst: false }),
+    supabase.from("bets").select("*"),
+    supabase.from("matches").select("*"),
+    supabase.from("teams").select("*"),
+    supabase.from("outright_bets").select("*"),
+    supabase.from("outright_markets").select("id, title, kind"),
+    supabase.from("outright_outcomes").select("id, name, name_zh"),
+  ]);
 
   const lastSettleRun = await getLastSettleRun(supabase);
 
@@ -71,6 +89,9 @@ export default async function LeaderboardPage() {
           teams={(teams ?? []) as Team[]}
           currentUserId={user.id}
           prevRanks={prevRanks}
+          outrightBets={(outrightBets ?? []) as OutrightBet[]}
+          outrightMarkets={(outrightMarkets ?? []) as OutrightMarket[]}
+          outrightOutcomes={(outrightOutcomes ?? []) as OutrightOutcome[]}
         />
       </main>
     </>
