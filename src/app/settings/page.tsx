@@ -22,6 +22,20 @@ export default async function SettingsPage() {
 
   const teams = await getPlayingTeams(supabase);
 
+  // 仍在比赛中的球队 = 有未开赛比赛的队。主队不在其中即「已被淘汰」，可改选。
+  const { data: upcoming } = await supabase
+    .from("matches")
+    .select("home_team_id, away_team_id")
+    .eq("status", "scheduled")
+    .gt("commence_time", new Date().toISOString());
+  const aliveIds = new Set<number>();
+  for (const m of upcoming ?? []) {
+    if (m.home_team_id) aliveIds.add(m.home_team_id);
+    if (m.away_team_id) aliveIds.add(m.away_team_id);
+  }
+  const homeTeam = profile.home_team_id ?? null;
+  const homeTeamEliminated = homeTeam != null && !aliveIds.has(homeTeam);
+
   return (
     <>
       <Nav nickname={profile.nickname} />
@@ -34,7 +48,9 @@ export default async function SettingsPage() {
           <SettingsForm
             teams={teams}
             initialNickname={profile.nickname}
-            initialHomeTeam={profile.home_team_id ?? null}
+            initialHomeTeam={homeTeam}
+            homeTeamEliminated={homeTeamEliminated}
+            aliveTeamIds={Array.from(aliveIds)}
           />
         </div>
       </main>
