@@ -112,7 +112,6 @@ export default function OutrightCard({
       <div className="flex flex-col gap-1.5">
         {visible.map((o) => {
           const isPlaced = placedId === o.id;
-          const isPending = pendingId === o.id;
           const isWinner = settled && winnerId === o.id;
           const disabled = busy || settled || locked || o.closed;
           return (
@@ -125,9 +124,7 @@ export default function OutrightCard({
                   ? "bg-emerald-400 text-teal-deep"
                   : isPlaced
                     ? "bg-yellow-300 text-teal-deep"
-                    : isPending
-                      ? "bg-yellow-200 text-teal-deep"
-                      : "bg-white text-teal-deep"
+                    : "bg-white text-teal-deep"
               } ${o.closed && !isWinner ? "opacity-40" : ""} ${
                 disabled ? "cursor-default" : "cursor-pointer"
               }`}
@@ -158,33 +155,68 @@ export default function OutrightCard({
         })}
       </div>
 
-      {/* 下注前确认条 */}
+      {/* 下注前确认弹窗 */}
       {!locked && !settled && pendingOutcome && (
-        <div className="mt-3 cartoon-card bg-yellow-50 p-3 flex flex-col gap-2">
-          <p className="text-sm font-bold text-teal-deep">
-            确认猜「{outcomeName(pendingOutcome)}」？
-          </p>
-          <p className="text-xs text-teal-deep/70">
-            下注 🥕200
-            {pendingOutcome.odds != null &&
-              `，猜中得 🥕${Math.round(OUTRIGHT_STAKE * pendingOutcome.odds)}`}
-            。<span className="font-bold">一旦确认不可修改或撤销。</span>
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={busy}
-              onClick={confirmBet}
-              className="cartoon-btn flex-1 bg-yellow-300 text-teal-deep px-3 py-2 text-sm font-bold"
-            >
-              {busy ? "提交中…" : "确认下注"}
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => setPendingId(null)}
-              className="cartoon-btn flex-1 bg-white text-teal-deep px-3 py-2 text-sm font-bold"
-            >
-              取消
-            </button>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => !busy && setPendingId(null)}
+        >
+          <div
+            className="cartoon-card bg-white p-5 w-full max-w-xs flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h4 className="font-black text-teal-deep text-lg">确认下注</h4>
+            <div className="flex items-center gap-2">
+              {pendingOutcome.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={pendingOutcome.image_url}
+                  alt=""
+                  className="w-9 h-9 rounded-full object-cover bg-white border-2 border-[#0f3d3e]"
+                />
+              ) : (
+                <span className="text-2xl">{market.kind === "golden_boot" ? "👟" : "🏆"}</span>
+              )}
+              <div className="min-w-0">
+                <div className="font-black text-teal-deep truncate">
+                  {outcomeName(pendingOutcome)}
+                </div>
+                <div className="text-xs text-teal-deep/60">
+                  {market.title}
+                  {pendingOutcome.odds != null &&
+                    ` · ×${formatOdds(pendingOutcome.odds)}`}
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-teal-deep/80">
+              下注 <b>🥕200</b>
+              {pendingOutcome.odds != null && (
+                <>
+                  ，猜中得{" "}
+                  <b>🥕{Math.round(OUTRIGHT_STAKE * pendingOutcome.odds)}</b>
+                </>
+              )}
+              。
+            </p>
+            <p className="text-sm font-bold text-red-600">
+              ⚠️ 一旦确认，不可修改或撤销！
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                disabled={busy}
+                onClick={confirmBet}
+                className="cartoon-btn flex-1 bg-yellow-300 text-teal-deep px-3 py-3 font-bold"
+              >
+                {busy ? "提交中…" : "确认下注"}
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => setPendingId(null)}
+                className="cartoon-btn flex-1 bg-white text-teal-deep px-3 py-3 font-bold"
+              >
+                取消
+              </button>
+            </div>
           </div>
         </div>
       )}
