@@ -131,6 +131,7 @@ export default function OutrightCard({
       }
       setPlacedId(o.id);
       setPendingId(null);
+      setCollapsed(true);
       return;
     }
 
@@ -149,6 +150,7 @@ export default function OutrightCard({
     }
     setPlacedId(o.id);
     setPendingId(null);
+    setCollapsed(true);
   }
 
   const placedOutcome = outcomes.find((o) => o.id === placedId) ?? null;
