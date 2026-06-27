@@ -26,11 +26,15 @@ export function hasStarted(match: Match): boolean {
   return new Date(match.commence_time).getTime() <= Date.now();
 }
 
-/** 把数据库报错转成中文提示。 */
+/** 把数据库报错转成中文提示（统一用「竞猜」措辞）。 */
 export function humanizeBetError(message: string): string {
   if (message.includes("已开赛")) return "比赛已开赛，无法操作";
-  if (message.includes("主队")) return "只有自己主队的比赛才能多倍下注";
-  if (message.includes("1~3 倍")) return "下注额必须是 100 的 1~3 倍";
+  if (message.includes("主队")) return "只有自己主队的比赛才能多倍竞猜";
+  if (message.includes("不合法") || message.includes("1~3 倍"))
+    return "竞猜额不合法";
+  if (message.includes("分晓")) return "该竞猜已揭晓，无法竞猜";
+  if (message.includes("出局")) return "该选项已出局，换一个吧";
+  if (message.includes("不可修改")) return "该竞猜已锁定，不可修改";
   return message;
 }
 
