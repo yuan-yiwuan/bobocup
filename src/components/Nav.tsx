@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/matches", label: "比赛", icon: "⚽" },
-  { href: "/matches?tab=special", label: "特别竞猜", icon: "✨", twoLine: true },
   { href: "/leaderboard", label: "排行", icon: "🏆" },
+  { href: "/matches?tab=special", label: "特别竞猜", icon: "✨", twoLine: true },
 ];
 
 export default function Nav({ nickname }: { nickname: string | null }) {
