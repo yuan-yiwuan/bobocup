@@ -22,6 +22,9 @@ export default function BettingTabs({
   outrightMarkets,
   outrightOutcomes,
   outrightBets,
+  dailyMarket,
+  dailyOutcomes,
+  dailyBet,
 }: {
   matches: Match[];
   teams: Team[];
@@ -31,6 +34,9 @@ export default function BettingTabs({
   outrightMarkets: OutrightMarket[];
   outrightOutcomes: OutrightOutcome[];
   outrightBets: OutrightBet[];
+  dailyMarket: OutrightMarket | null;
+  dailyOutcomes: OutrightOutcome[];
+  dailyBet: OutrightBet | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -97,7 +103,7 @@ export default function BettingTabs({
           userId={userId}
           userHomeTeamId={userHomeTeamId}
         />
-      ) : outrightMarkets.length === 0 ? (
+      ) : outrightMarkets.length === 0 && !dailyMarket ? (
         <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
           ⏳ 特别竞猜还没上线
           <p className="font-normal text-sm text-teal-deep/60 mt-2">
@@ -106,8 +112,23 @@ export default function BettingTabs({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {dailyMarket && (
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-teal-deep/60 font-semibold">
+                🎲 今日竞猜 · 每天一题 · 一注 🥕100 · 当天有效
+              </p>
+              <OutrightCard
+                market={dailyMarket}
+                outcomes={dailyOutcomes}
+                userBet={dailyBet}
+                userId={userId}
+                stake={100}
+                daily
+              />
+            </div>
+          )}
           <p className="text-xs text-teal-deep/60 font-semibold">
-            和单场无关的长期竞猜：一直开放到揭晓，倍数每天更新，竞猜那刻锁定。
+            🏆 长期竞猜：一直开放到揭晓，倍数每天更新，竞猜那刻锁定。
           </p>
           {outrightMarkets.map((m) => (
             <OutrightCard

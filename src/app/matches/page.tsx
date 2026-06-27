@@ -10,6 +10,7 @@ import type {
   Team,
 } from "@/lib/types";
 import BettingTabs from "./BettingTabs";
+import { pacificDate } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default async function MatchesPage() {
     { data: outrightMarkets },
     { data: outrightOutcomes },
     { data: outrightBets },
+    { data: dailyMarketRow },
   ] = await Promise.all([
     supabase
       .from("matches")
@@ -44,10 +46,30 @@ export default async function MatchesPage() {
       .order("commence_time"),
     supabase.from("teams").select("*"),
     supabase.from("bets").select("*").eq("user_id", user.id),
-    supabase.from("outright_markets").select("*").order("kind"),
+    // 长期盘（金靴/夺冠），不含每日
+    supabase.from("outright_markets").select("*").neq("kind", "daily").order("kind"),
     supabase.from("outright_outcomes").select("*"),
     supabase.from("outright_bets").select("*").eq("user_id", user.id),
+    // 今日的每日竞猜
+    supabase
+      .from("outright_markets")
+      .select("*")
+      .eq("kind", "daily")
+      .eq("featured_date", pacificDate())
+      .maybeSingle(),
   ]);
+
+  const allOutcomes = (outrightOutcomes ?? []) as OutrightOutcome[];
+  const allOutrightBets = (outrightBets ?? []) as OutrightBet[];
+  const dailyMarket = (dailyMarketRow ?? null) as OutrightMarket | null;
+  const dailyOutcomes = dailyMarket
+    ? allOutcomes
+        .filter((o) => o.market_id === dailyMarket.id)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    : [];
+  const dailyBet = dailyMarket
+    ? allOutrightBets.find((b) => b.market_id === dailyMarket.id) ?? null
+    : null;
 
   return (
     <>
@@ -60,8 +82,11 @@ export default async function MatchesPage() {
           userId={user.id}
           userHomeTeamId={profile.home_team_id ?? null}
           outrightMarkets={(outrightMarkets ?? []) as OutrightMarket[]}
-          outrightOutcomes={(outrightOutcomes ?? []) as OutrightOutcome[]}
-          outrightBets={(outrightBets ?? []) as OutrightBet[]}
+          outrightOutcomes={allOutcomes}
+          outrightBets={allOutrightBets}
+          dailyMarket={dailyMarket}
+          dailyOutcomes={dailyOutcomes}
+          dailyBet={dailyBet}
         />
       </main>
     </>

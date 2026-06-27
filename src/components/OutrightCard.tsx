@@ -11,7 +11,6 @@ import { humanizeBetError } from "@/lib/bets";
 import { formatOdds } from "@/lib/format";
 
 const TOP_N = 5;
-const OUTRIGHT_STAKE = 200;
 
 /** outright 候选项展示名：球队用中文名，球员用原名。 */
 function outcomeName(o: OutrightOutcome): string {
@@ -23,11 +22,17 @@ export default function OutrightCard({
   outcomes,
   userBet,
   userId,
+  stake = 200,
+  daily = false,
 }: {
   market: OutrightMarket;
   outcomes: OutrightOutcome[];
   userBet: OutrightBet | null;
   userId: string;
+  /** 每注胡萝卜数：outright 200、daily 100 */
+  stake?: number;
+  /** 每日竞猜：下注走服务端实时校验接口 */
+  daily?: boolean;
 }) {
   // 已下注的选项 id（一旦下注即锁定，不可修改/撤销）
   const [placedId, setPlacedId] = useState<number | null>(
@@ -67,12 +72,37 @@ export default function OutrightCard({
     if (!o) return;
     setBusy(true);
     setErr(null);
+
+    if (daily) {
+      // 每日竞猜：走服务端接口，下注那刻实时校验 <80% 且未结束
+      try {
+        const res = await fetch("/api/daily/bet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ outcomeId: o.id }),
+        });
+        const data = await res.json();
+        setBusy(false);
+        if (!res.ok) {
+          setErr(humanizeBetError(data.error ?? "竞猜失败"));
+          return;
+        }
+      } catch {
+        setBusy(false);
+        setErr("网络错误，请重试");
+        return;
+      }
+      setPlacedId(o.id);
+      setPendingId(null);
+      return;
+    }
+
     const supabase = createClient();
     const { error } = await supabase.from("outright_bets").insert({
       user_id: userId,
       market_id: market.id,
       outcome_id: o.id,
-      stake: OUTRIGHT_STAKE,
+      stake,
       odds_snapshot: o.odds,
     });
     setBusy(false);
@@ -91,7 +121,12 @@ export default function OutrightCard({
     <div className="cartoon-card p-4">
       <div className="flex items-center justify-between mb-1">
         <h3 className="font-black text-teal-deep text-lg">
-          {market.kind === "golden_boot" ? "👟" : "🏆"} {market.title}
+          {market.kind === "golden_boot"
+            ? "👟"
+            : market.kind === "daily"
+              ? "🎲"
+              : "🏆"}{" "}
+          {market.title}
         </h3>
         {settled && (
           <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-1 rounded-full border-2 border-[#0f3d3e]">
@@ -100,7 +135,7 @@ export default function OutrightCard({
         )}
       </div>
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-3">
-        <span>每人一注 · 🥕200 · 一旦竞猜不可修改</span>
+        <span>每人一注 · 🥕{stake} · 一旦竞猜不可修改</span>
         {placedOutcome && (
           <span className="text-teal-deep">
             已投 {outcomeName(placedOutcome)}
@@ -189,11 +224,11 @@ export default function OutrightCard({
               </div>
             </div>
             <p className="text-sm text-teal-deep/80">
-              竞猜 <b>🥕200</b>
+              竞猜 <b>🥕{stake}</b>
               {pendingOutcome.odds != null && (
                 <>
                   ，猜中得{" "}
-                  <b>🥕{Math.round(OUTRIGHT_STAKE * pendingOutcome.odds)}</b>
+                  <b>🥕{Math.round(stake * pendingOutcome.odds)}</b>
                 </>
               )}
               。

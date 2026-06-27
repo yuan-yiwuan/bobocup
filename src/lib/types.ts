@@ -94,16 +94,21 @@ export const STAKE = 100;
 
 // ── 长期盘（outright/futures）：金靴、夺冠…… ──────────────────────
 
-export type OutrightKind = "golden_boot" | "champion";
+export type OutrightKind = "golden_boot" | "champion" | "daily";
 
 export interface OutrightMarket {
   id: string; // Polymarket event slug
   title: string;
   kind: OutrightKind;
-  outcome_label: string; // '球员' / '球队'
+  outcome_label: string; // '球员' / '球队' / '选项'
   settled: boolean;
   result_outcome_id: number | null;
   updated_at: string;
+  // 每日竞猜（kind='daily'）专用
+  pool: boolean; // 是否在每日竞猜池中
+  featured_date: string | null; // 被选为「今日竞猜」的日期（太平洋，YYYY-MM-DD）
+  category: string | null; // trump / culture / player_h2h / ...
+  closed: boolean; // Polymarket 上是否已结束
 }
 
 export interface OutrightOutcome {

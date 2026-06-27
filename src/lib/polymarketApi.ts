@@ -43,6 +43,7 @@ interface GammaMarket {
 interface GammaEvent {
   slug: string;
   title: string;
+  closed?: boolean;
   markets: GammaMarket[];
 }
 
@@ -196,4 +197,88 @@ export async function getOutrightMarket(slug: string): Promise<OutrightMarket> {
   // 概率高到低
   outcomes.sort((a, b) => b.prob - a.prob);
   return { slug, outcomes, resolved: winnerName != null, winnerName };
+}
+
+// ── 每日竞猜：通用单盘读取（二元 Yes/No 或多选 negRisk 都支持） ──────
+
+export interface DailyMarket {
+  slug: string;
+  title: string;
+  outcomes: OutrightOutcome[];
+  /** 任一选项的最高概率（用于「无选项 >80%」筛选） */
+  maxProb: number;
+  resolved: boolean;
+  winnerName: string | null;
+  /** Polymarket 上整盘是否已结束 */
+  closed: boolean;
+}
+
+/**
+ * 拉一个任意 Polymarket 盘并归一成可投选项：
+ *  - 二元单盘（一个 market，outcomes 如 ["Yes","No"] 或两个名字）→ 两个选项；
+ *  - 多选 negRisk（多个子 market，groupItemTitle 为选项名）→ 每个子市场一个选项。
+ * 给每日竞猜的「实时校验」和「选项落库」共用。
+ */
+export async function getDailyMarket(slug: string): Promise<DailyMarket> {
+  const res = await fetch(`${BASE}/events?slug=${encodeURIComponent(slug)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`polymarket events ${res.status}: ${await res.text()}`);
+  }
+  const events: GammaEvent[] = await res.json();
+  const event = events[0];
+  if (!event) throw new Error(`polymarket: 未找到 event slug=${slug}`);
+
+  const ms = event.markets ?? [];
+  const outcomes: OutrightOutcome[] = [];
+
+  if (ms.length === 1 && !ms[0].groupItemTitle) {
+    // 二元单盘：两个 outcome 标签各算一个选项
+    const m = ms[0];
+    const labels = parseJsonArray(m.outcomes);
+    const prices = parseJsonArray(m.outcomePrices);
+    labels.forEach((label, i) => {
+      const p = Number(prices[i]);
+      if (!Number.isFinite(p)) return;
+      outcomes.push({
+        name: label,
+        prob: p,
+        image: m.image ?? m.icon ?? null,
+        closed: !!m.closed,
+        isWinner: !!m.closed && p >= 0.9,
+      });
+    });
+  } else {
+    // 多选 negRisk：每个子市场的 Yes 价
+    for (const m of ms) {
+      const name = m.groupItemTitle;
+      if (!name) continue;
+      const labels = parseJsonArray(m.outcomes);
+      const prices = parseJsonArray(m.outcomePrices);
+      const yesIdx = labels.findIndex((o) => o.toLowerCase() === "yes");
+      const yes = Number(prices[yesIdx >= 0 ? yesIdx : 0]);
+      if (!Number.isFinite(yes)) continue;
+      outcomes.push({
+        name,
+        prob: yes,
+        image: m.image ?? m.icon ?? null,
+        closed: !!m.closed,
+        isWinner: !!m.closed && yes >= 0.9,
+      });
+    }
+  }
+
+  outcomes.sort((a, b) => b.prob - a.prob);
+  const winnerName = outcomes.find((o) => o.isWinner)?.name ?? null;
+  const maxProb = outcomes.reduce((mx, o) => Math.max(mx, o.prob), 0);
+  return {
+    slug,
+    title: event.title,
+    outcomes,
+    maxProb,
+    resolved: winnerName != null,
+    winnerName,
+    closed: !!event.closed,
+  };
 }
