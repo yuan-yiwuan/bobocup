@@ -36,6 +36,33 @@ body {
   background: #ffffff;
 }
 
+/* 每日竞猜未投：卡片外圈一圈缓慢旋转的光晕（连续、不闪烁，卡本身不动） */
+@keyframes dailySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.daily-glow {
+  position: relative;
+}
+.daily-glow::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 1.5rem;
+  z-index: -1;
+  background: conic-gradient(
+    from 0deg,
+    #fde047,
+    #fb923c,
+    #f472b6,
+    #fb923c,
+    #fde047
+  );
+  filter: blur(3px);
+  animation: dailySpin 4s linear infinite;
+}
+
 .cartoon-btn {
   border: 2.5px solid #0f3d3e;
   border-radius: 0.9rem;
