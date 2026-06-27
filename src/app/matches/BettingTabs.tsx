@@ -22,6 +22,7 @@ export default function BettingTabs({
   outrightMarkets,
   outrightOutcomes,
   outrightBets,
+  nameById,
   dailyMarket,
   dailyOutcomes,
   dailyBet,
@@ -34,7 +35,9 @@ export default function BettingTabs({
   userHomeTeamId: number | null;
   outrightMarkets: OutrightMarket[];
   outrightOutcomes: OutrightOutcome[];
+  /** 所有人的特别竞猜注单（用于「大家的竞猜」） */
   outrightBets: OutrightBet[];
+  nameById: Record<string, string>;
   dailyMarket: OutrightMarket | null;
   dailyOutcomes: OutrightOutcome[];
   dailyBet: OutrightBet | null;
@@ -87,10 +90,19 @@ export default function BettingTabs({
     return map;
   }, [outrightOutcomes]);
 
-  const betByMarket = useMemo(
-    () => Object.fromEntries(outrightBets.map((b) => [b.market_id, b])),
-    [outrightBets],
-  );
+  // 当前用户自己在每个盘的注单（决定卡片是否已锁定）
+  const betByMarket = useMemo(() => {
+    const m: Record<string, OutrightBet> = {};
+    for (const b of outrightBets) if (b.user_id === userId) m[b.market_id] = b;
+    return m;
+  }, [outrightBets, userId]);
+
+  // 每个盘所有人的注单（「大家的竞猜」下拉）
+  const peerBetsByMarket = useMemo(() => {
+    const map: Record<string, OutrightBet[]> = {};
+    for (const b of outrightBets) (map[b.market_id] ??= []).push(b);
+    return map;
+  }, [outrightBets]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,7 +126,7 @@ export default function BettingTabs({
               : "bg-white text-teal-deep"
           }`}
         >
-          🏆 特别竞猜
+          ✨ 特别竞猜
         </button>
       </div>
 
@@ -149,6 +161,8 @@ export default function BettingTabs({
                 daily
                 highlight={dailyUnbet}
                 deadline={dailyDeadline}
+                peerBets={peerBetsByMarket[dailyMarket.id] ?? []}
+                nameById={nameById}
               />
             </div>
           )}
@@ -162,6 +176,8 @@ export default function BettingTabs({
               outcomes={outcomesByMarket.get(m.id) ?? []}
               userBet={betByMarket[m.id] ?? null}
               userId={userId}
+              peerBets={peerBetsByMarket[m.id] ?? []}
+              nameById={nameById}
             />
           ))}
         </div>

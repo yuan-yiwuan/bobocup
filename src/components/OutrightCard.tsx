@@ -26,6 +26,8 @@ export default function OutrightCard({
   daily = false,
   highlight = false,
   deadline = null,
+  peerBets = [],
+  nameById = {},
 }: {
   market: OutrightMarket;
   outcomes: OutrightOutcome[];
@@ -39,6 +41,10 @@ export default function OutrightCard({
   highlight?: boolean;
   /** 倒计时目标（ISO），每日竞猜未投时显示 */
   deadline?: string | null;
+  /** 本盘所有人的竞猜（用于「大家的竞猜」下拉） */
+  peerBets?: { user_id: string; outcome_id: number; status: string }[];
+  /** user_id → 昵称 */
+  nameById?: Record<string, string>;
 }) {
   // 已下注的选项 id（一旦下注即锁定，不可修改/撤销）
   const [placedId, setPlacedId] = useState<number | null>(
@@ -49,8 +55,15 @@ export default function OutrightCard({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [peersOpen, setPeersOpen] = useState(false);
   // 已投过的卡片默认折叠（反正不能改）
   const [collapsed, setCollapsed] = useState<boolean>(userBet != null);
+
+  // outcome_id → 展示名（给「大家的竞猜」用）
+  const nameOfOutcome = (id: number) => {
+    const o = outcomes.find((x) => x.id === id);
+    return o ? outcomeName(o) : "—";
+  };
 
   const settled = market.settled;
   const winnerId = market.result_outcome_id;
@@ -323,6 +336,42 @@ export default function OutrightCard({
         </p>
       )}
       {err && <p className="mt-2 text-xs text-red-600 font-semibold">{err}</p>}
+
+      {peerBets.length > 0 && (
+        <div className="mt-2 border-t-2 border-dashed border-teal-deep/20 pt-2">
+          <button
+            onClick={() => setPeersOpen((v) => !v)}
+            className="text-xs font-bold text-teal-brand"
+          >
+            👥 大家的竞猜 ({peerBets.length}) {peersOpen ? "▴" : "▾"}
+          </button>
+          {peersOpen && (
+            <ul className="mt-1.5 flex flex-col gap-1">
+              {peerBets.map((b, i) => {
+                const win = settled && winnerId === b.outcome_id;
+                return (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
+                    <span className="font-bold text-teal-deep truncate">
+                      {nameById[b.user_id] ?? "神秘人"}
+                    </span>
+                    <span
+                      className={`shrink-0 ${
+                        win ? "text-emerald-600 font-bold" : "text-teal-deep/70"
+                      }`}
+                    >
+                      {nameOfOutcome(b.outcome_id)}
+                      {win && " 🎉"}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
