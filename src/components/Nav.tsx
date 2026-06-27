@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href: "/matches", label: "比赛", icon: "⚽" },
-  { href: "/matches?tab=special", label: "特别竞猜", icon: "✨" },
-  { href: "/leaderboard", label: "排行榜", icon: "🏆" },
+  { href: "/matches?tab=special", label: "特别竞猜", icon: "✨", twoLine: true },
+  { href: "/leaderboard", label: "排行", icon: "🏆" },
 ];
 
 export default function Nav({ nickname }: { nickname: string | null }) {
@@ -39,10 +39,10 @@ export default function Nav({ nickname }: { nickname: string | null }) {
       <div className="mx-auto max-w-3xl px-3 py-3 flex items-center gap-1.5 sm:gap-2">
         <Link
           href="/matches"
-          className="font-black text-white text-xl shrink-0"
+          className="font-black text-white text-lg shrink-0 whitespace-nowrap"
           aria-label="波波杯"
         >
-          🥕
+          🥕<span className="hidden sm:inline"> 波波杯</span>
         </Link>
         <nav className="flex gap-1 shrink min-w-0 overflow-x-auto">
           {LINKS.map((l) => {
@@ -51,13 +51,27 @@ export default function Nav({ nickname }: { nickname: string | null }) {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`px-2 py-1.5 rounded-full text-sm font-bold border-2 border-[#0f3d3e] whitespace-nowrap shrink-0 ${
+                className={`rounded-full font-bold border-2 border-[#0f3d3e] whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                  l.twoLine ? "px-2 py-0.5" : "px-2 py-1.5 text-sm"
+                } ${
                   active
                     ? "bg-yellow-300 text-[#0f3d3e]"
                     : "bg-white/90 text-teal-deep"
                 }`}
               >
-                {l.icon} {l.label}
+                {l.twoLine ? (
+                  <>
+                    <span className="text-sm">{l.icon}</span>
+                    <span className="flex flex-col leading-[1.05] text-[10px] text-center">
+                      <span>特别</span>
+                      <span>竞猜</span>
+                    </span>
+                  </>
+                ) : (
+                  <span>
+                    {l.icon} {l.label}
+                  </span>
+                )}
               </Link>
             );
           })}
