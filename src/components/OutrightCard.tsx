@@ -337,17 +337,21 @@ export default function OutrightCard({
       )}
       {err && <p className="mt-2 text-xs text-red-600 font-semibold">{err}</p>}
 
-      {peerBets.length > 0 && (
+      {peerBets.filter((b) => b.user_id !== userId).length > 0 && (
         <div className="mt-2 border-t-2 border-dashed border-teal-deep/20 pt-2">
           <button
             onClick={() => setPeersOpen((v) => !v)}
             className="text-xs font-bold text-teal-brand"
           >
-            👥 大家的竞猜 ({peerBets.length}) {peersOpen ? "▴" : "▾"}
+            👥 大家的竞猜 (
+            {peerBets.filter((b) => b.user_id !== userId).length})
+            {peersOpen ? " ▴" : " ▾"}
           </button>
           {peersOpen && (
             <ul className="mt-1.5 flex flex-col gap-1">
-              {peerBets.map((b, i) => {
+              {peerBets
+                .filter((b) => b.user_id !== userId)
+                .map((b, i) => {
                 const win = settled && winnerId === b.outcome_id;
                 return (
                   <li
