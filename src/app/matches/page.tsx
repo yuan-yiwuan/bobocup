@@ -28,8 +28,6 @@ export default async function MatchesPage() {
     .maybeSingle();
   if (!profile?.nickname) redirect("/onboarding");
 
-  const nowIso = new Date().toISOString();
-
   const [
     { data: matches },
     { data: teams },
@@ -41,10 +39,11 @@ export default async function MatchesPage() {
     { data: profileRows },
     { data: allMatchBetRows },
   ] = await Promise.all([
+    // 未结算的比赛都显示（含已开赛未结算的，灰显禁投）
     supabase
       .from("matches")
       .select("*")
-      .gt("commence_time", nowIso)
+      .eq("settled", false)
       .order("commence_time"),
     supabase.from("teams").select("*"),
     supabase.from("bets").select("*").eq("user_id", user.id),

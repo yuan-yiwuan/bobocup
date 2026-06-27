@@ -343,7 +343,7 @@ export default function OutrightCard({
             onClick={() => setPeersOpen((v) => !v)}
             className="text-xs font-bold text-teal-brand"
           >
-            👥 大家的竞猜 (
+            🐰 大家的竞猜 (
             {peerBets.filter((b) => b.user_id !== userId).length})
             {peersOpen ? " ▴" : " ▾"}
           </button>
