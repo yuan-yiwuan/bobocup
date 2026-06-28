@@ -165,20 +165,20 @@ export default function LeaderboardView({
       {/* 榜单切换：左右两个按钮，默认收成榜 */}
       <div className="flex gap-2">
         <button
-          onClick={() => setTab("profit")}
-          className={`flex-1 cartoon-btn py-2 font-black text-sm ${
-            tab === "profit" ? "bg-teal-brand text-white" : "bg-white text-teal-deep"
-          }`}
-        >
-          🥕 收成榜
-        </button>
-        <button
           onClick={() => setTab("milk")}
           className={`flex-1 cartoon-btn py-2 font-black text-sm ${
             tab === "milk" ? "bg-teal-brand text-white" : "bg-white text-teal-deep"
           }`}
         >
           🥛 毒奶榜
+        </button>
+        <button
+          onClick={() => setTab("profit")}
+          className={`flex-1 cartoon-btn py-2 font-black text-sm ${
+            tab === "profit" ? "bg-teal-brand text-white" : "bg-white text-teal-deep"
+          }`}
+        >
+          🥕 收成榜
         </button>
       </div>
 
