@@ -162,52 +162,15 @@ export default function LeaderboardView({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* tab 切换 */}
-      <div className="flex gap-2">
-        <TabButton active={tab === "milk"} onClick={() => setTab("milk")}>
-          🥛 毒奶榜
-        </TabButton>
-        <TabButton active={tab === "profit"} onClick={() => setTab("profit")}>
-          🥕 收成榜
-        </TabButton>
-      </div>
-
-      {/* 昨日榜 */}
-      {awards && (
-        <div className="grid grid-cols-2 gap-3">
-          {tab === "milk" ? (
-            <>
-              <AwardCard
-                title="🎯 昨日最准"
-                tone="good"
-                names={awards.accurate.map(nameOf)}
-                value={`猜对率 ${Math.round(awards.accurateRate * 100)}%`}
-              />
-              <AwardCard
-                title="🥛 昨日最毒"
-                tone="milk"
-                names={awards.milk.map(nameOf)}
-                value={`猜错率 ${Math.round(awards.milkRate * 100)}%`}
-              />
-            </>
-          ) : (
-            <>
-              <AwardCard
-                title="💰 昨日最赚"
-                tone="good"
-                names={awards.earn.map(nameOf)}
-                value={carrotText(awards.earnNet)}
-              />
-              <AwardCard
-                title="💸 昨日最赔"
-                tone="milk"
-                names={awards.lose.map(nameOf)}
-                value={carrotText(awards.loseNet)}
-              />
-            </>
-          )}
-        </div>
-      )}
+      {/* 榜单切换：长条 dropdown，默认收成榜 */}
+      <select
+        value={tab}
+        onChange={(e) => setTab(e.target.value as Tab)}
+        className="cartoon-btn bg-yellow-300 text-teal-deep w-full px-4 py-2.5 text-base font-black outline-none"
+      >
+        <option value="profit">🥕 收成榜（比谁胡萝卜多）</option>
+        <option value="milk">🥛 毒奶榜（比谁更毒）</option>
+      </select>
 
       {ranked.map((e, i) => {
         const { row, settled, lost, lossRate, profit } = e;
@@ -372,6 +335,43 @@ export default function LeaderboardView({
           </div>
         );
       })}
+
+      {/* 昨日榜（放在最底部） */}
+      {awards && (
+        <div className="grid grid-cols-2 gap-3 mt-1">
+          {tab === "milk" ? (
+            <>
+              <AwardCard
+                title="🎯 昨日最准"
+                tone="good"
+                names={awards.accurate.map(nameOf)}
+                value={`猜对率 ${Math.round(awards.accurateRate * 100)}%`}
+              />
+              <AwardCard
+                title="🥛 昨日最毒"
+                tone="milk"
+                names={awards.milk.map(nameOf)}
+                value={`猜错率 ${Math.round(awards.milkRate * 100)}%`}
+              />
+            </>
+          ) : (
+            <>
+              <AwardCard
+                title="💰 昨日最赚"
+                tone="good"
+                names={awards.earn.map(nameOf)}
+                value={carrotText(awards.earnNet)}
+              />
+              <AwardCard
+                title="💸 昨日最赔"
+                tone="milk"
+                names={awards.lose.map(nameOf)}
+                value={carrotText(awards.loseNet)}
+              />
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -396,27 +396,6 @@ function TrendBadge({ prev, live }: { prev: number | undefined; live: number }) 
     return <span className="text-[10px] font-black text-red-500 leading-none mt-0.5">▼{-delta}</span>;
   }
   return <span className="text-[10px] font-black text-teal-deep/30 leading-none mt-0.5">–</span>;
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 cartoon-btn py-2 font-black text-sm ${
-        active ? "bg-teal-brand text-white" : "bg-white text-teal-deep"
-      }`}
-    >
-      {children}
-    </button>
-  );
 }
 
 /** 昨日榜单卡片：标题 + 获奖人（多人并列时轮播）+ 数值。 */
