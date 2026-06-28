@@ -86,6 +86,7 @@ export default function LeaderboardView({
 
   const [tab, setTab] = useState<Tab>("profit");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [boardOpen, setBoardOpen] = useState(false);
   const mounted = useMounted();
 
   // 只显示「活跃」用户：近 3 天下过注 / 近 3 天有注单结算 / 已开赛比赛投注覆盖过半。
@@ -162,15 +163,44 @@ export default function LeaderboardView({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 榜单切换：长条 dropdown，默认收成榜 */}
-      <select
-        value={tab}
-        onChange={(e) => setTab(e.target.value as Tab)}
-        className="cartoon-btn bg-white text-teal-deep w-full px-4 py-2.5 text-base font-black outline-none"
-      >
-        <option value="profit">🥕 收成榜</option>
-        <option value="milk">🥛 毒奶榜</option>
-      </select>
+      {/* 榜单切换：自定义全宽下拉条（避免原生 select 在桌面端偏右），默认收成榜 */}
+      <div className="relative">
+        <button
+          onClick={() => setBoardOpen((o) => !o)}
+          className="cartoon-btn bg-white text-teal-deep w-full px-4 py-2.5 text-base font-black flex items-center justify-center gap-1"
+        >
+          {tab === "profit" ? "🥕 收成榜" : "🥛 毒奶榜"}
+          <span className="text-xs">▾</span>
+        </button>
+        {boardOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setBoardOpen(false)}
+            />
+            <div className="absolute left-0 right-0 mt-2 z-20 cartoon-card p-1.5 flex flex-col">
+              <button
+                onClick={() => {
+                  setTab("profit");
+                  setBoardOpen(false);
+                }}
+                className="px-3 py-2 rounded-lg text-base font-black text-teal-deep hover:bg-teal-50 text-center"
+              >
+                🥕 收成榜
+              </button>
+              <button
+                onClick={() => {
+                  setTab("milk");
+                  setBoardOpen(false);
+                }}
+                className="px-3 py-2 rounded-lg text-base font-black text-teal-deep hover:bg-teal-50 text-center"
+              >
+                🥛 毒奶榜
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {ranked.map((e, i) => {
         const { row, settled, lost, lossRate, profit } = e;
