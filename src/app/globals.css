@@ -28,6 +28,42 @@ body {
   min-height: 100vh;
 }
 
+/* 胡萝卜雨 + 公告弹入（每日大礼特效） */
+@keyframes carrotFall {
+  0% {
+    transform: translateY(-15vh) rotate(0deg);
+  }
+  100% {
+    transform: translateY(115vh) rotate(360deg);
+  }
+}
+.carrot-drop {
+  position: absolute;
+  top: 0;
+  animation-name: carrotFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+  user-select: none;
+  pointer-events: none;
+}
+@keyframes giftPop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.gift-pop {
+  animation: giftPop 0.45s ease-out;
+}
+
 /* 卡通风：圆角 + 粗描边 + 厚阴影 */
 .cartoon-card {
   border: 3px solid #0f3d3e;
