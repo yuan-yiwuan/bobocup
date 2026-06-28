@@ -166,10 +166,10 @@ export default function LeaderboardView({
       <select
         value={tab}
         onChange={(e) => setTab(e.target.value as Tab)}
-        className="cartoon-btn bg-yellow-300 text-teal-deep w-full px-4 py-2.5 text-base font-black outline-none"
+        className="cartoon-btn bg-white text-teal-deep w-full px-4 py-2.5 text-base font-black outline-none"
       >
-        <option value="profit">🥕 收成榜（比谁胡萝卜多）</option>
-        <option value="milk">🥛 毒奶榜（比谁更毒）</option>
+        <option value="profit">🥕 收成榜</option>
+        <option value="milk">🥛 毒奶榜</option>
       </select>
 
       {ranked.map((e, i) => {
