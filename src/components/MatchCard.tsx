@@ -48,7 +48,8 @@ export default function MatchCard({
 }) {
   const isAdvance = match.bet_type === "advance";
   const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
-  // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级）200。主队比赛可 1~3 倍。
+  // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级）200。
+  // 任何比赛可投 1~2 倍；自己主队的比赛可投 1~4 倍。
   const base = isAdvance ? 200 : 100;
 
   const [pick, setPick] = useState<Pick | null>(initialPick);
@@ -62,6 +63,8 @@ export default function MatchCard({
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
+  // 任何比赛最高 2 倍；自己主队的比赛最高 4 倍。
+  const maxMultiplier = htPick != null ? 4 : 2;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -95,7 +98,7 @@ export default function MatchCard({
     if (pick === p) {
       // 再点一次 = 取消投注
       setPick(null);
-      setStake(100);
+      setStake(base);
       const supabase = createClient();
       const { error } = await supabase
         .from("bets")
@@ -108,8 +111,8 @@ export default function MatchCard({
         setErr(humanizeBetError(error.message));
       }
     } else {
-      // 主队的比赛：胜/平/负切换都保留倍数；非主队比赛一律 base
-      const nextStake = htPick != null ? stake : base;
+      // 切换胜/平/负时保留当前倍数，但不得超过该场允许的上限
+      const nextStake = Math.min(stake, base * maxMultiplier);
       setPick(p);
       setStake(nextStake);
       const msg = await save(p, nextStake);
@@ -123,7 +126,7 @@ export default function MatchCard({
   }
 
   async function onMultiplier(m: number) {
-    if (busy || started || htPick == null || pick == null) return;
+    if (busy || started || pick == null || m > maxMultiplier) return;
     setErr(null);
     setBusy(true);
     const prev = stake;
@@ -223,34 +226,32 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 主队加成：自己主队的比赛，胜/平/负任选都可 1~3 倍 */}
-      {htPick && (
-        <div
-          className={`mt-3 flex items-center gap-2 ${
-            pick != null ? "" : "opacity-40"
-          }`}
-        >
-          <span className="text-xs font-bold text-teal-deep shrink-0">
-            🥕 主队加成
-          </span>
-          <div className="flex gap-1.5">
-            {[1, 2, 3].map((m) => (
-              <button
-                key={m}
-                disabled={busy || started || pick == null}
-                onClick={() => onMultiplier(m)}
-                className={`w-8 h-8 cartoon-btn text-sm ${
-                  pick != null && multiplier === m
-                    ? "bg-teal-brand text-white"
-                    : "bg-white text-teal-deep"
-                }`}
-              >
-                {m}×
-              </button>
-            ))}
-          </div>
+      {/* 加倍：任何比赛可 1~2 倍；自己主队的比赛可 1~4 倍 */}
+      <div
+        className={`mt-3 flex items-center gap-2 ${
+          pick != null ? "" : "opacity-40"
+        }`}
+      >
+        <span className="text-xs font-bold text-teal-deep shrink-0">
+          {htPick ? "🥕 主队加成" : "🥕 加倍"}
+        </span>
+        <div className="flex gap-1.5">
+          {Array.from({ length: maxMultiplier }, (_, i) => i + 1).map((m) => (
+            <button
+              key={m}
+              disabled={busy || started || pick == null}
+              onClick={() => onMultiplier(m)}
+              className={`w-8 h-8 cartoon-btn text-sm ${
+                pick != null && multiplier === m
+                  ? "bg-teal-brand text-white"
+                  : "bg-white text-teal-deep"
+              }`}
+            >
+              {m}×
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {started && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
