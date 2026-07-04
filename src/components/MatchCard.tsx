@@ -49,7 +49,7 @@ export default function MatchCard({
   const isAdvance = match.bet_type === "advance";
   const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
   // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级）200。
-  // 任何比赛可投 1~2 倍；自己主队的比赛可投 1~4 倍。
+  // 任何比赛可投 1~2 倍；自己主队的比赛可投 1~3 倍。
   const base = isAdvance ? 200 : 100;
 
   const [pick, setPick] = useState<Pick | null>(initialPick);
@@ -63,8 +63,8 @@ export default function MatchCard({
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
-  // 任何比赛最高 2 倍；自己主队的比赛最高 4 倍。
-  const maxMultiplier = htPick != null ? 4 : 2;
+  // 任何比赛最高 2 倍；自己主队的比赛最高 3 倍。
+  const maxMultiplier = htPick != null ? 3 : 2;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -226,7 +226,7 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 加倍：任何比赛可 1~2 倍；自己主队的比赛可 1~4 倍 */}
+      {/* 加倍：任何比赛可 1~2 倍；自己主队的比赛可 1~3 倍 */}
       <div
         className={`mt-3 flex items-center gap-2 ${
           pick != null ? "" : "opacity-40"
