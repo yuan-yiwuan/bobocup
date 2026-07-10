@@ -63,13 +63,8 @@ export default function MatchCard({
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
 
-  // 本注允许的最大倍数：任何比赛 2 倍；主队的比赛 3 倍；押主队赢 5 倍
-  function maxMultFor(p: Pick | null): number {
-    if (htPick == null) return 2;
-    if (p != null && p === htPick) return 5;
-    return 3;
-  }
-  const maxMult = maxMultFor(pick);
+  // 本注允许的最大倍数：任何比赛 2 倍；自己主队的比赛 3 倍
+  const maxMult = htPick == null ? 2 : 3;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -116,11 +111,9 @@ export default function MatchCard({
         setErr(humanizeBetError(error.message));
       }
     } else {
-      // 切换投注项时保留倍数，但不超过新投注项允许的上限
-      const nextStake = Math.min(stake, base * maxMultFor(p));
+      // 切换投注项时保留倍数（同一场比赛上限一致，不用再收敛）
       setPick(p);
-      setStake(nextStake);
-      const msg = await save(p, nextStake);
+      const msg = await save(p, stake);
       if (msg) {
         setPick(prevPick);
         setStake(prevStake);
@@ -231,18 +224,14 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 加倍：任何比赛可 2 倍；主队的比赛 3 倍；押主队赢 5 倍 */}
+      {/* 加倍：任何比赛可 2 倍；自己主队的比赛 3 倍 */}
       <div
         className={`mt-3 flex items-center gap-2 ${
           pick != null ? "" : "opacity-40"
         }`}
       >
         <span className="text-xs font-bold text-teal-deep shrink-0">
-          {pick != null && pick === htPick
-            ? "🥕 押主队赢"
-            : htPick != null
-              ? "🥕 主队加成"
-              : "🥕 加倍"}
+          {htPick != null ? "🥕 主队加成" : "🥕 加倍"}
         </span>
         <div className="flex gap-1.5">
           {Array.from({ length: maxMult }, (_, i) => i + 1).map((m) => (
