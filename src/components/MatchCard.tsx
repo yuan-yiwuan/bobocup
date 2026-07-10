@@ -63,6 +63,14 @@ export default function MatchCard({
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
 
+  // 本注允许的最大倍数：任何比赛 2 倍；主队的比赛 3 倍；押主队赢 5 倍
+  function maxMultFor(p: Pick | null): number {
+    if (htPick == null) return 2;
+    if (p != null && p === htPick) return 5;
+    return 3;
+  }
+  const maxMult = maxMultFor(pick);
+
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
   const qs = useSearchParams().toString();
@@ -95,7 +103,7 @@ export default function MatchCard({
     if (pick === p) {
       // 再点一次 = 取消投注
       setPick(null);
-      setStake(100);
+      setStake(base);
       const supabase = createClient();
       const { error } = await supabase
         .from("bets")
@@ -108,8 +116,8 @@ export default function MatchCard({
         setErr(humanizeBetError(error.message));
       }
     } else {
-      // 主队的比赛：胜/平/负切换都保留倍数；非主队比赛一律 base
-      const nextStake = htPick != null ? stake : base;
+      // 切换投注项时保留倍数，但不超过新投注项允许的上限
+      const nextStake = Math.min(stake, base * maxMultFor(p));
       setPick(p);
       setStake(nextStake);
       const msg = await save(p, nextStake);
@@ -123,7 +131,7 @@ export default function MatchCard({
   }
 
   async function onMultiplier(m: number) {
-    if (busy || started || htPick == null || pick == null) return;
+    if (busy || started || pick == null || m > maxMult) return;
     setErr(null);
     setBusy(true);
     const prev = stake;
@@ -223,34 +231,36 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 主队加成：自己主队的比赛，胜/平/负任选都可 1~3 倍 */}
-      {htPick && (
-        <div
-          className={`mt-3 flex items-center gap-2 ${
-            pick != null ? "" : "opacity-40"
-          }`}
-        >
-          <span className="text-xs font-bold text-teal-deep shrink-0">
-            🥕 主队加成
-          </span>
-          <div className="flex gap-1.5">
-            {[1, 2, 3].map((m) => (
-              <button
-                key={m}
-                disabled={busy || started || pick == null}
-                onClick={() => onMultiplier(m)}
-                className={`w-8 h-8 cartoon-btn text-sm ${
-                  pick != null && multiplier === m
-                    ? "bg-teal-brand text-white"
-                    : "bg-white text-teal-deep"
-                }`}
-              >
-                {m}×
-              </button>
-            ))}
-          </div>
+      {/* 加倍：任何比赛可 2 倍；主队的比赛 3 倍；押主队赢 5 倍 */}
+      <div
+        className={`mt-3 flex items-center gap-2 ${
+          pick != null ? "" : "opacity-40"
+        }`}
+      >
+        <span className="text-xs font-bold text-teal-deep shrink-0">
+          {pick != null && pick === htPick
+            ? "🥕 押主队赢"
+            : htPick != null
+              ? "🥕 主队加成"
+              : "🥕 加倍"}
+        </span>
+        <div className="flex gap-1.5">
+          {Array.from({ length: maxMult }, (_, i) => i + 1).map((m) => (
+            <button
+              key={m}
+              disabled={busy || started || pick == null}
+              onClick={() => onMultiplier(m)}
+              className={`w-8 h-8 cartoon-btn text-sm ${
+                pick != null && multiplier === m
+                  ? "bg-teal-brand text-white"
+                  : "bg-white text-teal-deep"
+              }`}
+            >
+              {m}×
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
       {started && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">
