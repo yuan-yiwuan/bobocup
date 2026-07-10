@@ -70,7 +70,13 @@ export default function OutrightCard({
   const locked = placedId != null; // 已下注
 
   const titleEmoji =
-    market.kind === "golden_boot" ? "👟" : market.kind === "daily" ? "🎲" : "🏆";
+    market.kind === "golden_boot"
+      ? "👟"
+      : market.kind === "daily"
+        ? "🎲"
+        : market.kind === "carrot_king"
+          ? "🥕"
+          : "🏆";
 
   // 已投 + 折叠：显示精简卡，点开可看完整（只读）
   if (locked && collapsed) {

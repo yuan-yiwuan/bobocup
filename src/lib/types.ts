@@ -94,7 +94,11 @@ export const STAKE = 100;
 
 // ── 长期盘（outright/futures）：金靴、夺冠…… ──────────────────────
 
-export type OutrightKind = "golden_boot" | "champion" | "daily";
+export type OutrightKind =
+  | "golden_boot"
+  | "champion"
+  | "daily"
+  | "carrot_king";
 
 export interface OutrightMarket {
   id: string; // Polymarket event slug
