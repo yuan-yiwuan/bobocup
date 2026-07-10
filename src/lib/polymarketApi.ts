@@ -66,6 +66,14 @@ function parseJsonArray(v: string | undefined): string[] {
   }
 }
 
+/**
+ * Polymarket 给多选盘挂的「Other」兜底子市场基本没人交易，Yes 价常年停在
+ * 0.5 默认中点（→ 倍数恒为 2.00），不是真实概率，所以直接剔除不作为选项。
+ */
+function isOtherOutcome(name: string | undefined): boolean {
+  return (name ?? "").trim().toLowerCase() === "other";
+}
+
 /** 队名归一化：跨数据源匹配统一走 teamKey（含别名表）。 */
 const normName = teamKey;
 
@@ -177,7 +185,7 @@ export async function getOutrightMarket(slug: string): Promise<OutrightMarket> {
   let winnerName: string | null = null;
   for (const m of event.markets ?? []) {
     const name = m.groupItemTitle;
-    if (!name) continue;
+    if (!name || isOtherOutcome(name)) continue;
     const labels = parseJsonArray(m.outcomes);
     const prices = parseJsonArray(m.outcomePrices);
     const yesIdx = labels.findIndex((o) => o.toLowerCase() === "yes");
@@ -253,7 +261,7 @@ export async function getDailyMarket(slug: string): Promise<DailyMarket> {
     // 多选 negRisk：每个子市场的 Yes 价
     for (const m of ms) {
       const name = m.groupItemTitle;
-      if (!name) continue;
+      if (!name || isOtherOutcome(name)) continue;
       const labels = parseJsonArray(m.outcomes);
       const prices = parseJsonArray(m.outcomePrices);
       const yesIdx = labels.findIndex((o) => o.toLowerCase() === "yes");
