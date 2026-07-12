@@ -51,19 +51,6 @@ export default async function RulesPage() {
             </ul>
           </Section>
 
-          <Section title="🥕 胡萝卜王">
-            <ul className="list-disc pl-5 space-y-0.5">
-              <li>
-                猜 <b>谁到最后净胡萝卜最多</b>，选项是<b>参与过的玩家</b>
-              </li>
-              <li>
-                赔率按<b>当前收成榜</b>每天更新：现在越领先、赔率越低
-              </li>
-              <li>一注 <b>200 根 🥕</b>，一旦竞猜不可修改或撤销</li>
-              <li>世界杯结束后按最终收成榜<b>手动揭晓</b>冠军</li>
-            </ul>
-          </Section>
-
           <Section title="💰 倍数与结算">
             <ul className="list-disc pl-5 space-y-0.5">
               <li>倍数来自真实数据，每天更新一次</li>

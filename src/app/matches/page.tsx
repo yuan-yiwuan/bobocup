@@ -47,8 +47,13 @@ export default async function MatchesPage() {
       .order("commence_time"),
     supabase.from("teams").select("*"),
     supabase.from("bets").select("*").eq("user_id", user.id),
-    // 长期盘（金靴/夺冠），不含每日
-    supabase.from("outright_markets").select("*").neq("kind", "daily").order("kind"),
+    // 长期盘（金靴/夺冠），不含每日；胡萝卜王前端暂时下线
+    supabase
+      .from("outright_markets")
+      .select("*")
+      .neq("kind", "daily")
+      .neq("kind", "carrot_king")
+      .order("kind"),
     supabase.from("outright_outcomes").select("*"),
     // 所有人的特别竞猜注单（用于「大家的竞猜」）
     supabase.from("outright_bets").select("*"),
