@@ -63,8 +63,8 @@ export default function MatchCard({
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
 
-  // 本注允许的最大倍数：任何比赛 2 倍；自己主队的比赛 3 倍
-  const maxMult = htPick == null ? 2 : 3;
+  // 本注允许的最大倍数：任何比赛 2 倍；有主队参加的比赛 5 倍（胜/平/负任选）
+  const maxMult = htPick == null ? 2 : 5;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -224,7 +224,7 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 加倍：任何比赛可 2 倍；自己主队的比赛 3 倍 */}
+      {/* 加倍：任何比赛可 2 倍；有主队参加的比赛 5 倍 */}
       <div
         className={`mt-3 flex items-center gap-2 ${
           pick != null ? "" : "opacity-40"
