@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import MatchesView from "./MatchesView";
 import OutrightCard from "@/components/OutrightCard";
 import type {
@@ -24,15 +24,16 @@ export default function BettingTabs({
   outrightOutcomes,
   outrightBets,
   nameById,
-  dailyMarket,
-  dailyOutcomes,
-  dailyBet,
-  dailyDeadline,
 }: {
   matches: Match[];
   teams: Team[];
   initialBets: Bet[];
-  matchPeerBets: { user_id: string; match_id: string; pick: Bet["pick"] }[];
+  matchPeerBets: {
+    user_id: string;
+    match_id: string;
+    pick: Bet["pick"];
+    stake: number;
+  }[];
   userId: string;
   userHomeTeamId: number | null;
   outrightMarkets: OutrightMarket[];
@@ -40,36 +41,9 @@ export default function BettingTabs({
   /** 所有人的特别竞猜注单（用于「大家的竞猜」） */
   outrightBets: OutrightBet[];
   nameById: Record<string, string>;
-  dailyMarket: OutrightMarket | null;
-  dailyOutcomes: OutrightOutcome[];
-  dailyBet: OutrightBet | null;
-  dailyDeadline: string;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const dailyUnbet = !!dailyMarket && !dailyBet;
-  const tabParam = searchParams.get("tab");
-  const tab = tabParam === "special" ? "special" : "matches";
-
-  // 每天第一次进竞猜页（该设备），若今天的每日竞猜还没投，引导去「特别竞猜」一次。
-  // 用 featured_date 作为「今天」的 key；当天再进就不打扰了。
-  const nudgeKey = dailyMarket?.featured_date ?? null;
-  useEffect(() => {
-    if (tabParam || !dailyUnbet || !nudgeKey) return;
-    try {
-      const STORE = "bobocup-daily-nudge";
-      if (localStorage.getItem(STORE) === nudgeKey) return; // 今天已引导过
-      localStorage.setItem(STORE, nudgeKey);
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("tab", "special");
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    } catch {
-      /* localStorage 不可用则忽略 */
-    }
-    // 仅首次挂载执行一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const tab = searchParams.get("tab") === "special" ? "special" : "matches";
 
   // market_id -> 候选项（已按 sort_order 排序）
   const outcomesByMarket = useMemo(() => {
@@ -110,7 +84,7 @@ export default function BettingTabs({
           matchPeerBets={matchPeerBets}
           nameById={nameById}
         />
-      ) : outrightMarkets.length === 0 && !dailyMarket ? (
+      ) : outrightMarkets.length === 0 ? (
         <div className="cartoon-card p-8 text-center text-teal-deep font-bold">
           ⏳ 特别竞猜还没上线
           <p className="font-normal text-sm text-teal-deep/60 mt-2">
@@ -119,25 +93,6 @@ export default function BettingTabs({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {dailyMarket && (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-teal-deep/60 font-semibold">
-                🎲 今日竞猜 · 每天一题 · 一注 🥕100 · 当天有效
-              </p>
-              <OutrightCard
-                market={dailyMarket}
-                outcomes={dailyOutcomes}
-                userBet={dailyBet}
-                userId={userId}
-                stake={100}
-                daily
-                highlight={dailyUnbet}
-                deadline={dailyDeadline}
-                peerBets={peerBetsByMarket[dailyMarket.id] ?? []}
-                nameById={nameById}
-              />
-            </div>
-          )}
           <p className="text-xs text-teal-deep/60 font-semibold">
             🏆 长期竞猜：一直开放到揭晓，倍数每天更新，竞猜那刻锁定。
           </p>

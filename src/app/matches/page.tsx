@@ -10,7 +10,6 @@ import type {
   Team,
 } from "@/lib/types";
 import BettingTabs from "./BettingTabs";
-import { pacificDate } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +34,6 @@ export default async function MatchesPage() {
     { data: outrightMarkets },
     { data: outrightOutcomes },
     { data: outrightBets },
-    { data: dailyMarketRow },
     { data: profileRows },
     { data: allMatchBetRows },
   ] = await Promise.all([
@@ -47,55 +45,31 @@ export default async function MatchesPage() {
       .order("commence_time"),
     supabase.from("teams").select("*"),
     supabase.from("bets").select("*").eq("user_id", user.id),
-    // 长期盘（金靴/夺冠），不含每日；胡萝卜王前端暂时下线
+    // 长期盘（金靴/夺冠/胡萝卜王），不含每日竞猜
     supabase
       .from("outright_markets")
       .select("*")
       .neq("kind", "daily")
-      .neq("kind", "carrot_king")
       .order("kind"),
     supabase.from("outright_outcomes").select("*"),
     // 所有人的特别竞猜注单（用于「大家的竞猜」）
     supabase.from("outright_bets").select("*"),
-    // 今日的每日竞猜
-    supabase
-      .from("outright_markets")
-      .select("*")
-      .eq("kind", "daily")
-      .eq("featured_date", pacificDate())
-      .maybeSingle(),
     supabase.from("profiles").select("id, nickname"),
-    // 所有人的比赛注单（用于比赛卡「大家的竞猜」）
-    supabase.from("bets").select("user_id, match_id, pick"),
+    // 所有人的比赛注单（用于比赛卡「大家的竞猜」，含 stake 以显示倍数）
+    supabase.from("bets").select("user_id, match_id, pick, stake"),
   ]);
 
   const allMatchBets = (allMatchBetRows ?? []) as {
     user_id: string;
     match_id: string;
     pick: Bet["pick"];
+    stake: number;
   }[];
   const allOutcomes = (outrightOutcomes ?? []) as OutrightOutcome[];
   const allOutrightBets = (outrightBets ?? []) as OutrightBet[];
   const nameById: Record<string, string> = Object.fromEntries(
     (profileRows ?? []).map((p) => [p.id as string, (p.nickname as string) ?? "神秘人"]),
   );
-  const dailyMarket = (dailyMarketRow ?? null) as OutrightMarket | null;
-  const dailyOutcomes = dailyMarket
-    ? allOutcomes
-        .filter((o) => o.market_id === dailyMarket.id)
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    : [];
-  const dailyBet = dailyMarket
-    ? allOutrightBets.find(
-        (b) => b.market_id === dailyMarket.id && b.user_id === user.id,
-      ) ?? null
-    : null;
-
-  // 每日竞猜换题时刻 = 下一个太平洋午夜（夏令时 PDT = UTC-7，赛事期内恒为夏令时）
-  const [y, mo, d] = pacificDate().split("-").map(Number);
-  const dailyDeadline = new Date(
-    Date.UTC(y, mo - 1, d + 1, 7, 0, 0),
-  ).toISOString();
 
   return (
     <>
@@ -112,10 +86,6 @@ export default async function MatchesPage() {
           outrightOutcomes={allOutcomes}
           outrightBets={allOutrightBets}
           nameById={nameById}
-          dailyMarket={dailyMarket}
-          dailyOutcomes={dailyOutcomes}
-          dailyBet={dailyBet}
-          dailyDeadline={dailyDeadline}
         />
       </main>
     </>
