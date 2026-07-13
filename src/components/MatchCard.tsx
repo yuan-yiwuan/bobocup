@@ -41,8 +41,8 @@ export default function MatchCard({
   initialPick: Pick | null;
   initialStake: number;
   showDate?: boolean;
-  /** 本场所有人的竞猜（「大家的竞猜」下拉） */
-  peerBets?: { user_id: string; pick: Pick }[];
+  /** 本场所有人的竞猜（「大家的竞猜」下拉），stake 用于显示倍数 */
+  peerBets?: { user_id: string; pick: Pick; stake: number }[];
   /** user_id → 昵称 */
   nameById?: Record<string, string>;
 }) {
@@ -283,6 +283,11 @@ export default function MatchCard({
                     </span>
                     <span className="shrink-0 text-teal-deep/70">
                       {pickLabel(match, b.pick, teams)}
+                      {b.stake > base && (
+                        <span className="ml-1 font-bold text-teal-brand">
+                          ×{Math.round(b.stake / base)}
+                        </span>
+                      )}
                     </span>
                   </li>
                 ))}
