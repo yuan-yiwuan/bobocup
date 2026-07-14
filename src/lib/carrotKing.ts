@@ -3,7 +3,7 @@ import { activeUserIds } from "@/lib/leaderboard";
 
 /**
  * 「胡萝卜王」盘：选项 = 当前在收成榜上的玩家，赔率按当前净胡萝卜每小时更新。
- * 选项不来自 Polymarket；用蔬菜🥦下注（不计入收成榜）；结算为手动（世界杯结束后）。
+ * 选项不来自 Polymarket；用西蓝花🥦下注（不计入收成榜）；结算为手动（世界杯结束后）。
  */
 export const CARROT_KING = {
   id: "bobocup-carrot-king",
