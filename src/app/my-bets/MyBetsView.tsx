@@ -180,7 +180,7 @@ function OutrightRow({
         : { text: "进行中", cls: "bg-gray-300 text-teal-deep" };
   const name = outcome?.name_zh ?? outcome?.name ?? "—";
   // 胡萝卜王用蔬菜结算，其余用胡萝卜
-  const unit = market?.kind === "carrot_king" ? "🥬" : "🥕";
+  const unit = market?.kind === "carrot_king" ? "🥦" : "🥕";
 
   return (
     <div className="cartoon-card p-3 flex items-center gap-2">
