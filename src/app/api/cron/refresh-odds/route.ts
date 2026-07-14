@@ -10,7 +10,7 @@ import {
 } from "@/lib/polymarketApi";
 import { isAuthorizedCron } from "@/lib/cron";
 import { teamKey } from "@/lib/teamNames";
-import { pacificDate } from "@/lib/leaderboard";
+import { pacificDate, activeUserIds } from "@/lib/leaderboard";
 import { STAKE } from "@/lib/types";
 
 type TeamInfo = { id: number; nameEn: string; nameZh: string };
@@ -534,8 +534,9 @@ export function carrotSoftmax(nets: number[]): number[] {
 /**
  * 刷新「胡萝卜王」盘：
  *  - upsert 盘元数据；已结算则跳过（不再改赔率）。
- *  - 选项 = 参与过（下过任意注）的用户；赔率 = softmax(净胡萝卜) 的公平赔率。
- *  - 只 upsert、从不删除选项：已有选项一直保留，避免押注对象凭空消失。
+ *  - 选项 = 当前在收成榜上的玩家（activeUserIds：近 3 天有投注/结算，或已开赛比赛覆盖 >50%）。
+ *  - 赔率 = softmax(净胡萝卜) 的公平赔率。
+ *  - 已掉出榜单、且没人押过的旧选项会被清掉（有人押过的保留并置灰，保证结算完整）。
  */
 async function refreshCarrotKing(
   supabase: ReturnType<typeof createAdminClient>,
@@ -560,19 +561,21 @@ async function refreshCarrotKing(
     .maybeSingle();
   if (mkt?.settled) return "already settled";
 
-  // 收成榜聚合 + 所有参与者（下过比赛注或特别竞猜注的人）
-  const [{ data: lb }, { data: mb }, { data: ob }] = await Promise.all([
+  // 收成榜聚合 + 活跃判定所需的比赛注单/赛程
+  const [{ data: lb }, { data: bets }, { data: matches }] = await Promise.all([
     supabase
       .from("leaderboard")
       .select("id, nickname, total_staked, total_returned"),
-    supabase.from("bets").select("user_id"),
-    supabase.from("outright_bets").select("user_id"),
+    supabase
+      .from("bets")
+      .select("user_id, match_id, status, created_at, updated_at"),
+    supabase.from("matches").select("id, commence_time"),
   ]);
-  const bettors = new Set<string>();
-  for (const r of mb ?? []) bettors.add(r.user_id as string);
-  for (const r of ob ?? []) bettors.add(r.user_id as string);
-  const players = (lb ?? []).filter((r) => bettors.has(r.id as string));
-  if (players.length === 0) return { outcomes: 0 };
+
+  // 与收成榜完全一致：只保留「现在在排行榜上」的玩家
+  const active = activeUserIds(bets ?? [], matches ?? []);
+  const players = (lb ?? []).filter((r) => active.has(r.id as string));
+  const keepNames = new Set(players.map((r) => r.id as string));
 
   const nets = players.map(
     (r) => Number(r.total_returned ?? 0) - Number(r.total_staked ?? 0),
@@ -598,10 +601,47 @@ async function refreshCarrotKing(
       updated_at: nowIso,
     };
   });
-  const { error } = await supabase
-    .from("outright_outcomes")
-    .upsert(rows, { onConflict: "market_id,name" });
-  if (error) throw new Error(`carrot_king outcomes: ${error.message}`);
+  if (rows.length > 0) {
+    const { error } = await supabase
+      .from("outright_outcomes")
+      .upsert(rows, { onConflict: "market_id,name" });
+    if (error) throw new Error(`carrot_king outcomes: ${error.message}`);
+  }
 
-  return { outcomes: rows.length };
+  // 清理已掉出榜单的旧选项：没人押过的直接删，有人押过的置灰保留
+  const [{ data: existing }, { data: placed }] = await Promise.all([
+    supabase
+      .from("outright_outcomes")
+      .select("id, name")
+      .eq("market_id", CARROT_KING.id),
+    supabase
+      .from("outright_bets")
+      .select("outcome_id")
+      .eq("market_id", CARROT_KING.id),
+  ]);
+  const betOutcomeIds = new Set(
+    (placed ?? []).map((b) => b.outcome_id as number),
+  );
+  const staleDelete: number[] = [];
+  const staleClose: number[] = [];
+  for (const o of existing ?? []) {
+    if (keepNames.has(o.name as string)) continue;
+    if (betOutcomeIds.has(o.id as number)) staleClose.push(o.id as number);
+    else staleDelete.push(o.id as number);
+  }
+  if (staleDelete.length > 0) {
+    await supabase.from("outright_outcomes").delete().in("id", staleDelete);
+  }
+  if (staleClose.length > 0) {
+    await supabase
+      .from("outright_outcomes")
+      .update({ closed: true, updated_at: nowIso })
+      .in("id", staleClose);
+  }
+
+  return {
+    outcomes: rows.length,
+    removed: staleDelete.length,
+    closed: staleClose.length,
+  };
 }
