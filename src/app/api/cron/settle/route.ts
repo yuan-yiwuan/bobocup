@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getFinishedMatches } from "@/lib/oddsApi";
 import { getKnockoutResults } from "@/lib/openfootball";
 import { isAuthorizedCron } from "@/lib/cron";
+import { refreshCarrotKing } from "@/lib/carrotKing";
 import { STAKE, type Match, type Pick } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -190,5 +191,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, settledMatches, settledBets });
+  // 胡萝卜王：结算后积分变了，顺手按最新收成榜刷新赔率（每小时与比赛结算同步）。
+  // 失败不影响比赛结算结果。
+  let carrotKing: unknown = null;
+  try {
+    carrotKing = await refreshCarrotKing(supabase);
+  } catch (e) {
+    carrotKing = { error: String(e instanceof Error ? e.message : e) };
+  }
+
+  return NextResponse.json({ ok: true, settledMatches, settledBets, carrotKing });
 }
