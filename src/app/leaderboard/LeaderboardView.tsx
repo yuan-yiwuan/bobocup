@@ -78,7 +78,7 @@ export default function LeaderboardView({
     () => new Map(outrightMarkets.map((m) => [m.id, m.title])),
     [outrightMarkets],
   );
-  // 胡萝卜王用蔬菜🥦结算，其余用胡萝卜🥕
+  // 胡萝卜王用西蓝花🥦结算，其余用胡萝卜🥕
   const marketUnit = useMemo(
     () =>
       new Map(

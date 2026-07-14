@@ -78,7 +78,7 @@ export default function OutrightCard({
           ? "🥕"
           : "🏆";
 
-  // 胡萝卜王用「蔬菜」下注（独立货币，不计入胡萝卜收成榜）；其余用胡萝卜
+  // 胡萝卜王用「西蓝花」下注（独立货币，不计入胡萝卜收成榜）；其余用胡萝卜
   const unit = market.kind === "carrot_king" ? "🥦" : "🥕";
 
   // 已投 + 折叠：显示精简卡，点开可看完整（只读）
@@ -210,7 +210,7 @@ export default function OutrightCard({
         <span>
           每人一注 · {unit}
           {stake}
-          {market.kind === "carrot_king" && " 蔬菜"} · 一旦竞猜不可修改
+          {market.kind === "carrot_king" && " 西蓝花"} · 一旦竞猜不可修改
         </span>
         {placedOutcome && (
           <span className="text-teal-deep">
