@@ -10,7 +10,7 @@ import {
 } from "@/lib/polymarketApi";
 import { isAuthorizedCron } from "@/lib/cron";
 import { teamKey } from "@/lib/teamNames";
-import { pacificDate, activeUserIds } from "@/lib/leaderboard";
+import { activeUserIds } from "@/lib/leaderboard";
 import { STAKE } from "@/lib/types";
 
 type TeamInfo = { id: number; nameEn: string; nameZh: string };
@@ -207,44 +207,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// ── 每日竞猜：刷新/结算已选题 + 挑选今天的 ───────────────────────
-
-// 类别权重（越大越易被选）；其它/未分类给低权重。
-const CATEGORY_WEIGHT: Record<string, number> = {
-  trump: 6,
-  culture: 6,
-  player_h2h: 4,
-  player_futures: 3,
-  tournament_futures: 3,
-  team_props: 1,
-  stage_elim: 1,
-};
-
-/** 单题权重 = 类别权重 × 热度权重（热度用 log 压缩成交量量级差）。 */
-function poolWeight(category: string | null, volume: number): number {
-  const cat = CATEGORY_WEIGHT[category ?? ""] ?? 0.5;
-  const pop = Math.log10((volume || 0) + 10); // ~1（$0）到 ~7（$1000万）
-  return cat * pop;
-}
-
-/**
- * 加权随机排序（Efraimidis–Spirakis）：key = u^(1/weight)，按 key 降序。
- * 权重高的更可能排前，但保留随机性，每天结果不同。
- */
-function weightedOrder<T extends { category: string | null; volume: number }>(
-  rows: T[],
-): T[] {
-  return rows
-    .map((r) => ({
-      r,
-      key: Math.pow(
-        Math.random(),
-        1 / Math.max(poolWeight(r.category, r.volume), 1e-6),
-      ),
-    }))
-    .sort((a, b) => b.key - a.key)
-    .map((x) => x.r);
-}
+// ── 每日竞猜（已下线）：不再选新题，仅继续结算历史遗留的已 featured 每日题 ──
 
 /** 把一个每日盘的选项写库（概率/倍数/是否出局），Yes/No 映射成是/否。 */
 async function upsertDailyOutcomes(
@@ -315,85 +278,28 @@ async function settleDaily(
 }
 
 async function refreshDaily(supabase: ReturnType<typeof createAdminClient>) {
-  const today = pacificDate();
-  const summary: Record<string, unknown> = {};
-
-  // 1) 刷新 + 结算「已 featured 且未结算」的每日题
+  // 每日竞猜已下线：不再挑选新题；只继续刷新/结算历史上「已 featured 且未结算」的每日题，
+  // 避免早先下过的每日注单永远晾在 pending。
   const { data: featured } = await supabase
     .from("outright_markets")
     .select("id")
     .eq("kind", "daily")
     .not("featured_date", "is", null)
     .eq("settled", false);
+  let settled = 0;
   for (const m of featured ?? []) {
     try {
       const live = await getDailyMarket(m.id as string);
       await upsertDailyOutcomes(supabase, m.id as string, live);
       if (live.resolved && live.winnerName) {
         await settleDaily(supabase, m.id as string, live.winnerName);
+        settled++;
       }
     } catch {
       /* 单题失败不影响其它 */
     }
   }
-
-  // 2) 今天已选则跳过
-  const { data: todays } = await supabase
-    .from("outright_markets")
-    .select("id")
-    .eq("kind", "daily")
-    .eq("featured_date", today)
-    .limit(1);
-  if ((todays?.length ?? 0) > 0) {
-    summary.featured = todays![0].id;
-    return summary;
-  }
-
-  // 3) 从池子挑一个：类别×热度加权随机排序，过滤掉已结束 / 有选项 >80%
-  const { data: poolRows } = await supabase
-    .from("outright_markets")
-    .select("id, category, volume")
-    .eq("kind", "daily")
-    .eq("pool", true)
-    .eq("closed", false)
-    .is("featured_date", null)
-    .eq("settled", false);
-  const sorted = weightedOrder(
-    (poolRows ?? []).map((r) => ({
-      id: r.id as string,
-      category: r.category as string | null,
-      volume: Number(r.volume ?? 0),
-    })),
-  );
-
-  let tries = 0;
-  for (const row of sorted) {
-    if (tries >= 30) break;
-    tries++;
-    let live: DailyMarket;
-    try {
-      live = await getDailyMarket(row.id as string);
-    } catch {
-      continue;
-    }
-    if (live.resolved || live.closed || live.outcomes.length === 0) {
-      await supabase
-        .from("outright_markets")
-        .update({ closed: true })
-        .eq("id", row.id as string);
-      continue;
-    }
-    if (live.maxProb > 0.8) continue; // 今天太一边倒，留着以后
-    await upsertDailyOutcomes(supabase, row.id as string, live);
-    await supabase
-      .from("outright_markets")
-      .update({ featured_date: today, title: live.title })
-      .eq("id", row.id as string);
-    summary.picked = row.id;
-    return summary;
-  }
-  summary.picked = null;
-  return summary;
+  return { retired: true, settledFeatured: settled };
 }
 
 /**
