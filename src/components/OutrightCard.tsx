@@ -78,6 +78,9 @@ export default function OutrightCard({
           ? "🥕"
           : "🏆";
 
+  // 胡萝卜王用「蔬菜」下注（独立货币，不计入胡萝卜收成榜）；其余用胡萝卜
+  const unit = market.kind === "carrot_king" ? "🥬" : "🥕";
+
   // 已投 + 折叠：显示精简卡，点开可看完整（只读）
   if (locked && collapsed) {
     const picked = outcomes.find((o) => o.id === placedId);
@@ -95,7 +98,8 @@ export default function OutrightCard({
             {titleEmoji} {market.title}
           </div>
           <div className="text-xs text-teal-deep/60 truncate">
-            猜 {picked ? outcomeName(picked) : "—"} · 🥕{stake}
+            猜 {picked ? outcomeName(picked) : "—"} · {unit}
+            {stake}
             {picked?.odds != null && ` ×${formatOdds(picked.odds)}`}
           </div>
         </div>
@@ -203,7 +207,11 @@ export default function OutrightCard({
         </div>
       )}
       <div className="flex items-center justify-between text-xs font-bold text-teal-deep/60 mb-3">
-        <span>每人一注 · 🥕{stake} · 一旦竞猜不可修改</span>
+        <span>
+          每人一注 · {unit}
+          {stake}
+          {market.kind === "carrot_king" && " 蔬菜"} · 一旦竞猜不可修改
+        </span>
         {placedOutcome && (
           <span className="text-teal-deep">
             已投 {outcomeName(placedOutcome)}
@@ -292,11 +300,18 @@ export default function OutrightCard({
               </div>
             </div>
             <p className="text-sm text-teal-deep/80">
-              竞猜 <b>🥕{stake}</b>
+              竞猜{" "}
+              <b>
+                {unit}
+                {stake}
+              </b>
               {pendingOutcome.odds != null && (
                 <>
                   ，猜中得{" "}
-                  <b>🥕{Math.round(stake * pendingOutcome.odds)}</b>
+                  <b>
+                    {unit}
+                    {Math.round(stake * pendingOutcome.odds)}
+                  </b>
                 </>
               )}
               。

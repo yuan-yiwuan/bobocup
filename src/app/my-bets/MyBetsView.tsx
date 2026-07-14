@@ -179,6 +179,8 @@ function OutrightRow({
         ? { text: "毒奶", cls: "bg-red-400 text-white" }
         : { text: "进行中", cls: "bg-gray-300 text-teal-deep" };
   const name = outcome?.name_zh ?? outcome?.name ?? "—";
+  // 胡萝卜王用蔬菜结算，其余用胡萝卜
+  const unit = market?.kind === "carrot_king" ? "🥬" : "🥕";
 
   return (
     <div className="cartoon-card p-3 flex items-center gap-2">
@@ -192,17 +194,20 @@ function OutrightRow({
           {market?.title ?? "特别竞猜"}
         </div>
         <div className="text-xs text-teal-deep/60">
-          猜 {name} · 🥕{bet.stake}
+          猜 {name} · {unit}
+          {bet.stake}
         </div>
       </div>
       {bet.status === "won" && bet.payout != null && (
         <span className="text-sm font-bold text-emerald-600 shrink-0">
-          +🥕{bet.payout - bet.stake}
+          +{unit}
+          {bet.payout - bet.stake}
         </span>
       )}
       {bet.status === "lost" && (
         <span className="text-sm font-bold text-red-500 shrink-0">
-          −🥕{bet.stake}
+          −{unit}
+          {bet.stake}
         </span>
       )}
       {bet.status === "pending" && bet.odds_snapshot != null && (

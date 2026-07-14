@@ -78,6 +78,17 @@ export default function LeaderboardView({
     () => new Map(outrightMarkets.map((m) => [m.id, m.title])),
     [outrightMarkets],
   );
+  // 胡萝卜王用蔬菜🥬结算，其余用胡萝卜🥕
+  const marketUnit = useMemo(
+    () =>
+      new Map(
+        outrightMarkets.map((m) => [
+          m.id,
+          m.kind === "carrot_king" ? "🥬" : "🥕",
+        ]),
+      ),
+    [outrightMarkets],
+  );
   const outcomeNameById = useMemo(
     () =>
       new Map(outrightOutcomes.map((o) => [o.id, o.name_zh ?? o.name])),
@@ -317,18 +328,21 @@ export default function LeaderboardView({
                             {marketTitle.get(b.market_id) ?? "特别竞猜"}
                           </div>
                           <div className="text-xs text-teal-deep/60 truncate">
-                            猜 {outcomeNameById.get(b.outcome_id) ?? "—"} · 🥕
+                            猜 {outcomeNameById.get(b.outcome_id) ?? "—"} ·{" "}
+                            {marketUnit.get(b.market_id) ?? "🥕"}
                             {b.stake}
                           </div>
                         </div>
                         {b.status === "won" && b.payout != null && (
                           <span className="text-xs font-bold text-emerald-600 shrink-0">
-                            +🥕{b.payout - b.stake}
+                            +{marketUnit.get(b.market_id) ?? "🥕"}
+                            {b.payout - b.stake}
                           </span>
                         )}
                         {b.status === "lost" && (
                           <span className="text-xs font-bold text-red-500 shrink-0">
-                            −🥕{b.stake}
+                            −{marketUnit.get(b.market_id) ?? "🥕"}
+                            {b.stake}
                           </span>
                         )}
                         {b.status === "pending" && b.odds_snapshot != null && (
