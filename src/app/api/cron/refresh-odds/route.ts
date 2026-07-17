@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     away_team_name: string;
     commence_time: string;
     bet_type: "advance";
+    round: KnockoutFixture["round"];
     odds_home?: number;
     odds_away?: number;
     odds_draw?: null;
@@ -120,24 +121,36 @@ export async function GET(request: NextRequest) {
       away_team_name: away.nameEn,
       commence_time: f.commenceTime,
       bet_type: "advance",
+      round: f.round,
     };
 
-    // 晋级概率（拿不到则只写身份，保留上次赔率）
-    let probs = null;
-    try {
-      probs = await getAdvanceProb(home.nameEn, away.nameEn, f.round);
-    } catch {
-      probs = null;
+    // 赔率：季军赛没有 reach-stage 盘，给公平对开（约 2.0）；其余走晋级概率。
+    let oddsPair: { home: number; away: number } | null = null;
+    if (f.round === "third_place") {
+      oddsPair = { home: probToOdds(0.5), away: probToOdds(0.5) };
+    } else {
+      try {
+        const probs = await getAdvanceProb(home.nameEn, away.nameEn, f.round);
+        if (probs) {
+          oddsPair = {
+            home: probToOdds(probs.a.prob),
+            away: probToOdds(probs.b.prob),
+          };
+        }
+      } catch {
+        oddsPair = null;
+      }
     }
-    if (probs) {
+    if (oddsPair) {
       withOdds.push({
         ...identity,
-        odds_home: probToOdds(probs.a.prob),
-        odds_away: probToOdds(probs.b.prob),
+        odds_home: oddsPair.home,
+        odds_away: oddsPair.away,
         odds_draw: null,
         odds_updated_at: nowIso,
       });
     } else {
+      // 拿不到概率：只写身份，保留上次赔率
       skippedNoProb++;
       withoutOdds.push(identity);
     }

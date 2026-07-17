@@ -10,6 +10,15 @@ export type MatchStatus = "scheduled" | "finished";
  */
 export type BetType = "h2h" | "advance";
 
+/** 淘汰赛轮次 key（含季军赛 third_place）。 */
+export type KnockoutRound =
+  | "round_of_32"
+  | "round_of_16"
+  | "quarterfinal"
+  | "semifinal"
+  | "third_place"
+  | "final";
+
 export interface Team {
   id: number;
   name_zh: string;
@@ -51,6 +60,8 @@ export interface Match {
   commence_time: string;
   status: MatchStatus;
   bet_type: BetType;
+  /** 淘汰赛轮次（round_of_32…final / third_place）；小组赛为 null。 */
+  round: KnockoutRound | null;
   home_score: number | null;
   away_score: number | null;
   odds_home: number | null;

@@ -23,6 +23,10 @@ import {
 const H2H_PICKS: Pick[] = ["home", "draw", "away"];
 const ADVANCE_PICKS: Pick[] = ["home", "away"];
 
+// 八强赛（含）开始的比赛才能加倍到 2 倍。2026 世界杯八强赛 7/9 开踢；
+// 若赛程调整，改这个日期即可。
+const QUARTERFINAL_START = new Date("2026-07-09T00:00:00Z").getTime();
+
 export default function MatchCard({
   match,
   teams,
@@ -47,9 +51,9 @@ export default function MatchCard({
   nameById?: Record<string, string>;
 }) {
   const isAdvance = match.bet_type === "advance";
+  const isThirdPlace = match.round === "third_place";
   const picks = isAdvance ? ADVANCE_PICKS : H2H_PICKS;
-  // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级）200。
-  // 任何比赛可投 1~2 倍；自己主队的比赛可投 1~3 倍。
+  // 每注基础胡萝卜数：小组赛 100，淘汰赛（晋级/季军赛）200。
   const base = isAdvance ? 200 : 100;
 
   const [pick, setPick] = useState<Pick | null>(initialPick);
@@ -63,8 +67,20 @@ export default function MatchCard({
   const htPick = homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
-  // 任何比赛最高 2 倍；自己主队的比赛最高 3 倍。
-  const maxMultiplier = htPick != null ? 3 : 2;
+  // 加倍上限：
+  //  - 季军赛：最高 2 倍（即便是自己主队的比赛）
+  //  - 自己主队的比赛：最高 3 倍
+  //  - 八强赛开始（含）的其它比赛：最高 2 倍
+  //  - 其余（小组赛、32/16 强非主队）：不可加倍
+  const isQuarterFinalOnwards =
+    new Date(match.commence_time).getTime() >= QUARTERFINAL_START;
+  const maxMultiplier = isThirdPlace
+    ? 2
+    : htPick != null
+      ? 3
+      : isQuarterFinalOnwards
+        ? 2
+        : 1;
 
   // 让大名单页知道是从哪个页面（连带日期/筛选）点进去的，返回时回到原样
   const pathname = usePathname();
@@ -146,6 +162,11 @@ export default function MatchCard({
         <span>
           {showDate && `${matchDateKey(match.commence_time)} · `}
           🕐 {matchTime(match.commence_time)}
+          {isThirdPlace && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-full bg-amber-200 text-teal-deep">
+              🥉 季军赛
+            </span>
+          )}
           {started && (
             <span className="ml-2 px-1.5 py-0.5 rounded-full bg-gray-300 text-teal-deep">
               ⏳ 进行中
@@ -215,7 +236,7 @@ export default function MatchCard({
                 {p === "draw"
                   ? "平局"
                   : isAdvance
-                    ? `${sideLabel(match, p, teams)} 晋级`
+                    ? `${sideLabel(match, p, teams)} ${isThirdPlace ? "胜" : "晋级"}`
                     : `${sideLabel(match, p, teams)}胜`}
               </span>
               <span className="text-xs opacity-70">
@@ -226,32 +247,34 @@ export default function MatchCard({
         })}
       </div>
 
-      {/* 加倍：任何比赛可 1~2 倍；自己主队的比赛可 1~3 倍 */}
-      <div
-        className={`mt-3 flex items-center gap-2 ${
-          pick != null ? "" : "opacity-40"
-        }`}
-      >
-        <span className="text-xs font-bold text-teal-deep shrink-0">
-          {htPick ? "🥕 主队加成" : "🥕 加倍"}
-        </span>
-        <div className="flex gap-1.5">
-          {Array.from({ length: maxMultiplier }, (_, i) => i + 1).map((m) => (
-            <button
-              key={m}
-              disabled={busy || started || pick == null}
-              onClick={() => onMultiplier(m)}
-              className={`w-8 h-8 cartoon-btn text-sm ${
-                pick != null && multiplier === m
-                  ? "bg-teal-brand text-white"
-                  : "bg-white text-teal-deep"
-              }`}
-            >
-              {m}×
-            </button>
-          ))}
+      {/* 加倍：季军赛/八强起可 2 倍，自己主队的比赛可 3 倍（季军赛封顶 2 倍） */}
+      {maxMultiplier > 1 && (
+        <div
+          className={`mt-3 flex items-center gap-2 ${
+            pick != null ? "" : "opacity-40"
+          }`}
+        >
+          <span className="text-xs font-bold text-teal-deep shrink-0">
+            {htPick && !isThirdPlace ? "🥕 主队加成" : "🥕 加倍"}
+          </span>
+          <div className="flex gap-1.5">
+            {Array.from({ length: maxMultiplier }, (_, i) => i + 1).map((m) => (
+              <button
+                key={m}
+                disabled={busy || started || pick == null}
+                onClick={() => onMultiplier(m)}
+                className={`w-8 h-8 cartoon-btn text-sm ${
+                  pick != null && multiplier === m
+                    ? "bg-teal-brand text-white"
+                    : "bg-white text-teal-deep"
+                }`}
+              >
+                {m}×
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {started && (
         <p className="mt-2 text-xs text-teal-deep/50 font-semibold">

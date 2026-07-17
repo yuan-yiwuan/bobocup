@@ -10,12 +10,16 @@
 const SOURCE =
   "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
 
-/** openfootball 的淘汰赛轮次名 → 我们的轮次 key。季军赛（Match for third place）刻意不收。 */
+/** openfootball 的淘汰赛轮次名 → 我们的轮次 key。含季军赛（三四名决赛）。 */
 const KNOCKOUT_ROUNDS: Record<string, KnockoutRoundKey> = {
   "Round of 32": "round_of_32",
   "Round of 16": "round_of_16",
   "Quarter-final": "quarterfinal",
   "Semi-final": "semifinal",
+  // 季军赛：openfootball 的写法可能是下列几种，都归到 third_place
+  "Match for third place": "third_place",
+  "Play-off for third place": "third_place",
+  "Third place play-off": "third_place",
   Final: "final",
 };
 
@@ -24,6 +28,7 @@ export type KnockoutRoundKey =
   | "round_of_16"
   | "quarterfinal"
   | "semifinal"
+  | "third_place"
   | "final";
 
 interface OfMatch {
@@ -104,7 +109,7 @@ function matchId(index: number): string {
 
 /**
  * 取所有淘汰赛对阵（双方都是真队名的才返回，占位的过滤掉）。
- * 季军赛不在内。
+ * 含季军赛（round='third_place'）。
  */
 export async function getKnockoutFixtures(): Promise<KnockoutFixture[]> {
   const matches = await fetchMatches();
