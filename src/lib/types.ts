@@ -51,6 +51,8 @@ export interface Match {
   commence_time: string;
   status: MatchStatus;
   bet_type: BetType;
+  /** 淘汰赛轮次（openfootball 轮次 key，如 'third_place'）；小组赛/历史行为 null。 */
+  round: string | null;
   home_score: number | null;
   away_score: number | null;
   odds_home: number | null;

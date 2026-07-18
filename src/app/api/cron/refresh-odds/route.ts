@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
     away_team_name: string;
     commence_time: string;
     bet_type: "advance";
+    round: string;
     odds_home?: number;
     odds_away?: number;
     odds_draw?: null;
@@ -120,6 +121,7 @@ export async function GET(request: NextRequest) {
       away_team_name: away.nameEn,
       commence_time: f.commenceTime,
       bet_type: "advance",
+      round: f.round,
     };
 
     // 晋级概率（拿不到则只写身份，保留上次赔率）

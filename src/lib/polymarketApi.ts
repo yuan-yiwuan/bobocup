@@ -24,6 +24,11 @@ export const ROUND_SLUGS = {
   quarterfinal: "world-cup-nation-to-reach-semifinals",
   /** 半决赛（4→2）：晋级 = 进决赛 */
   semifinal: "world-cup-nation-to-reach-final",
+  /**
+   * 季军赛：无「晋级」，胜者夺季军。用「谁获第三名」negRisk 盘 ——
+   * 参赛两队各读 Yes 价再归一化（等价于「谁赢这场」），与 reach-stage 同一套逻辑。
+   */
+  third_place: "world-cup-3rd-place-finish-20260713190252671",
   /** 决赛（2→1）：晋级 = 夺冠 */
   final: "world-cup-winner",
 } as const;

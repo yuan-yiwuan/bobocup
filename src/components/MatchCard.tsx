@@ -12,6 +12,7 @@ import {
   pickOdds,
 } from "@/lib/bets";
 import {
+  advanceVerb,
   formatOdds,
   matchDateKey,
   matchTime,
@@ -213,7 +214,7 @@ export default function MatchCard({
                 {p === "draw"
                   ? "平局"
                   : isAdvance
-                    ? `${sideLabel(match, p, teams)} 晋级`
+                    ? `${sideLabel(match, p, teams)} ${advanceVerb(match)}`
                     : `${sideLabel(match, p, teams)}胜`}
               </span>
               <span className="text-xs opacity-70">

@@ -15,12 +15,23 @@ export function sideLabel(
   return `⚽ ${fallback}`;
 }
 
+/**
+ * 淘汰赛两路盘（bet_type='advance'）里某一方的「结果动词」：
+ * 季军赛夺季军、决赛夺冠，其余轮次晋级。非淘汰赛（h2h）返回 null。
+ */
+export function advanceVerb(match: Match): string | null {
+  if (match.bet_type !== "advance") return null;
+  if (match.round === "third_place") return "夺季军";
+  if (match.round === "final") return "夺冠";
+  return "晋级";
+}
+
 /** 某个投注选项的文案。 */
 export function pickLabel(match: Match, pick: Pick, teams: TeamMap): string {
   if (pick === "draw") return "平局";
   const side = sideLabel(match, pick, teams);
-  // 淘汰赛：选项是「谁晋级」而非「谁胜」
-  return match.bet_type === "advance" ? `${side} 晋级` : side;
+  const verb = advanceVerb(match);
+  return verb ? `${side} ${verb}` : side;
 }
 
 export function formatOdds(odds: number | null): string {
