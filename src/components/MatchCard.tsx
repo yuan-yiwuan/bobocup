@@ -60,7 +60,11 @@ export default function MatchCard({
   const [err, setErr] = useState<string | null>(null);
   const [peersOpen, setPeersOpen] = useState(false);
 
-  const htPick = homeTeamPick(match, userHomeTeamId);
+  // 季军赛不给主队加成（前端限制）：置空即回到普通 2 倍、不显示主队徽标/文案
+  const htPick =
+    match.round === "third_place"
+      ? null
+      : homeTeamPick(match, userHomeTeamId);
   const started = hasStarted(match);
   const multiplier = Math.round(stake / base);
 
